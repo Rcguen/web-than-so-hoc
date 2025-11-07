@@ -8,35 +8,36 @@ import Infos from './components/Infos';
 import Contact from './components/Contact';
 import Footer from './components/Footer';
 import HistoryLookup from './components/HistoryLookup';
+import Login from './components/Login';
+import Register from './components/Register';
 
 function App() {
   return (
+    // ✅ Header phải nằm bên trong Router
     <Router>
-      <Header />
+      <>
+        <Header />
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <>
+                <Hero />
+                <Services />
+                <Projects />
+                <Infos />
+                <Contact />
+              </>
+            }
+          />
 
-      <Routes>
-        {/* Trang chủ */}
-        <Route
-          path="/"
-          element={
-            <>
-              <Hero />
-              <Services />
-              <Projects />
-              <Infos />
-              <Contact />
-            </>
-          }
-        />
-
-        {/* Trang tra cứu thần số học */}
-        <Route path="/lookup" element={<Lookup />} />
-
-        {/* Trang tra cứu lịch sử xem */}
-        <Route path="/history" element={<HistoryLookup />} />
-      </Routes>
-
-      <Footer />
+          <Route path="/lookup" element={<Lookup />} />
+          <Route path="/history" element={<HistoryLookup />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+        </Routes>
+        <Footer />
+      </>
     </Router>
   );
 }

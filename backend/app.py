@@ -1,11 +1,15 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from db import get_db_connection  # import file db.py
+from auth import auth
+
 
 
 app = Flask(__name__)
 CORS(app)
 
+
+# API tính con số chủ đạo
 @app.route('/api/numerology/calculate', methods=['POST'])
 def calculate_numerology():
     data = request.get_json()
@@ -76,6 +80,7 @@ def get_meaning(number):
         return jsonify({'error': 'Không tìm thấy ý nghĩa cho con số này'}), 404
     return jsonify(result)
 
+app.register_blueprint(auth)
 
 if __name__ == '__main__':
     app.run(debug=True)

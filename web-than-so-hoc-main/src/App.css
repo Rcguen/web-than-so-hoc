@@ -1,55 +1,136 @@
+/* ========== BASE ========== */
 .App {
   text-align: center;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
-}
-
-.App-link {
-  color: #61dafb;
-}
-
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(20px); }
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-15px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Hiệu ứng trỏ chuột và hover */
+/* ========== THANH TRÊN CÙNG (PRE-HEADER) ========== */
+.pre-header {
+  background: linear-gradient(90deg, #5b03e4, #9b3efc);
+  color: white;
+  padding: 8px 40px;
+  font-size: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  animation: fadeInDown 0.6s ease;
+}
+
+.pre-header .left-info ul {
+  display: flex;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  gap: 15px;
+}
+
+.pre-header .left-info li i {
+  margin-right: 5px;
+  color: #ffd700;
+}
+
+/* Góc phải của thanh trên */
+.pre-header .right-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Nút đăng nhập, đăng ký, đăng xuất */
+.btn-login,
+.btn-register,
+.btn-logout {
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-weight: bold;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  border: none;
+}
+
+/* Nút Đăng Nhập - nền vàng */
+.btn-login {
+  background-color: #ffd700;
+  color: #5b03e4;
+  box-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
+}
+.btn-login:hover {
+  background-color: #fff;
+  transform: translateY(-2px);
+}
+
+/* Nút Đăng Ký - viền vàng nền trong suốt */
+.btn-register {
+  background-color: transparent;
+  border: 2px solid #ffd700;
+  color: #ffd700;
+  box-shadow: 0 0 8px rgba(255, 215, 0, 0.3);
+}
+.btn-register:hover {
+  background-color: #ffd700;
+  color: #5b03e4;
+  transform: translateY(-2px);
+}
+
+/* Nút Đăng Xuất - đỏ */
+.btn-logout {
+  background-color: #ff4c4c;
+  color: #fff;
+  box-shadow: 0 0 8px rgba(255, 76, 76, 0.5);
+}
+.btn-logout:hover {
+  background-color: #ff2b2b;
+  transform: scale(1.05);
+}
+
+/* ========== HEADER CHÍNH (MENU) ========== */
+.header-area {
+  background-color: #5b03e4;
+  padding: 15px 40px;
+  position: sticky;
+  top: 0;
+  z-index: 999;
+}
+
+.main-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+}
+
+/* Menu trái */
+.nav {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 20px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.nav li {
+  display: inline-block;
+}
+
 .menu-link {
   color: #fff;
   text-decoration: none;
   padding: 8px 16px;
   font-weight: 500;
   transition: 0.3s;
-  cursor: pointer; /* 🖱 hiện bàn tay khi hover */
+  cursor: pointer;
 }
 
 .menu-link:hover {
@@ -57,13 +138,12 @@
   transform: translateY(-2px);
 }
 
-/* Trang đang chọn */
 .menu-link.active {
   color: #ffd700;
   border-bottom: 2px solid #ffd700;
 }
 
-/* ✅ Menu mobile */
+/* ========== MENU MOBILE ========== */
 .menu-trigger {
   display: none;
   cursor: pointer;
@@ -111,8 +191,13 @@
   top: 0;
 }
 
-/* Menu thu gọn khi màn hình nhỏ */
+/* Khi ở màn nhỏ */
 @media (max-width: 991px) {
+  .main-nav {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
   .main-nav .nav {
     display: none;
     flex-direction: column;
@@ -131,6 +216,8 @@
 
   .menu-trigger {
     display: block;
+    position: absolute;
+    right: 20px;
+    top: 25px;
   }
 }
-

@@ -98,39 +98,67 @@ function Lookup() {
       </form>
 
       {result && (
-        <div
-          style={{
-            marginTop: "40px",
-            background:
-              "linear-gradient(135deg, #7b2ff7 0%, #f107a3 100%)",
-            color: "white",
-            borderRadius: "20px",
-            padding: "30px",
-            width: "380px",
-            textAlign: "center",
-            boxShadow: "0 6px 18px rgba(0,0,0,0.2)",
-            animation: "fadeIn 1s ease-in-out",
-          }}
-        >
-          <h3>Kết quả tra cứu</h3>
-          <p>
-            <b>Tên:</b> {result.name}
-          </p>
-          <p>
-            <b>Ngày sinh:</b> {result.birthDate}
-          </p>
-          <p>
-            <b>Con số chủ đạo:</b> {result.lifePath}
-          </p>
+  <div
+    style={{
+      textAlign: "center",
+      marginTop: "40px",
+      animation: "fadeIn 1s ease-in-out",
+    }}
+  >
+    <h2>Kết quả:</h2>
+    <p><b>Tên:</b> {result.name}</p>
+    <p><b>Ngày sinh:</b> {result.birthDate}</p>
+    <p>
+      <b>Con số chủ đạo:</b>{" "}
+      <span
+        style={{
+          fontSize: "28px",
+          fontWeight: "bold",
+          color:
+            result.lifePath === 1
+              ? "#ff3b3b"
+              : result.lifePath === 2
+              ? "#0099ff"
+              : result.lifePath === 3
+              ? "#ffb400"
+              : result.lifePath === 4
+              ? "#4caf50"
+              : result.lifePath === 5
+              ? "#ff5722"
+              : result.lifePath === 6
+              ? "#9c27b0"
+              : result.lifePath === 7
+              ? "#3f51b5"
+              : result.lifePath === 8
+              ? "#795548"
+              : result.lifePath === 9
+              ? "#607d8b"
+              : "#5b03e4",
+        }}
+      >
+        {result.lifePath}
+      </span>
+    </p>
 
-          {meaning && (
-            <div style={{ marginTop: "20px" }}>
-              <h4>{meaning.title}</h4>
-              <p style={{ fontSize: "14px" }}>{meaning.description}</p>
-            </div>
-          )}
-        </div>
-      )}
+    {meaning && (
+      <div
+        style={{
+          marginTop: "20px",
+          backgroundColor: "#f9ebff",
+          padding: "20px",
+          borderRadius: "10px",
+          boxShadow: "0 0 8px rgba(91, 3, 228, 0.2)",
+          width: "60%",
+          margin: "0 auto",
+          animation: "fadeInUp 0.8s ease",
+        }}
+      >
+        <h3>{meaning.title}</h3>
+        <p>{meaning.description}</p>
+      </div>
+    )}
+  </div>
+)}
     </div>
   );
 }
