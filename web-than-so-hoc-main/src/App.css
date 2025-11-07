@@ -1,0 +1,136 @@
+.App {
+  text-align: center;
+}
+
+.App-logo {
+  height: 40vmin;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .App-logo {
+    animation: App-logo-spin infinite 20s linear;
+  }
+}
+
+.App-header {
+  background-color: #282c34;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(10px + 2vmin);
+  color: white;
+}
+
+.App-link {
+  color: #61dafb;
+}
+
+@keyframes App-logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Hiệu ứng trỏ chuột và hover */
+.menu-link {
+  color: #fff;
+  text-decoration: none;
+  padding: 8px 16px;
+  font-weight: 500;
+  transition: 0.3s;
+  cursor: pointer; /* 🖱 hiện bàn tay khi hover */
+}
+
+.menu-link:hover {
+  color: #ffd700;
+  transform: translateY(-2px);
+}
+
+/* Trang đang chọn */
+.menu-link.active {
+  color: #ffd700;
+  border-bottom: 2px solid #ffd700;
+}
+
+/* ✅ Menu mobile */
+.menu-trigger {
+  display: none;
+  cursor: pointer;
+  width: 35px;
+  height: 25px;
+  position: relative;
+}
+
+.menu-trigger span,
+.menu-trigger span::before,
+.menu-trigger span::after {
+  content: "";
+  background-color: #fff;
+  height: 3px;
+  width: 100%;
+  position: absolute;
+  left: 0;
+  transition: 0.4s;
+}
+
+.menu-trigger span {
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.menu-trigger span::before {
+  top: -10px;
+}
+
+.menu-trigger span::after {
+  top: 10px;
+}
+
+.menu-trigger.active span {
+  background-color: transparent;
+}
+
+.menu-trigger.active span::before {
+  transform: rotate(45deg);
+  top: 0;
+}
+
+.menu-trigger.active span::after {
+  transform: rotate(-45deg);
+  top: 0;
+}
+
+/* Menu thu gọn khi màn hình nhỏ */
+@media (max-width: 991px) {
+  .main-nav .nav {
+    display: none;
+    flex-direction: column;
+    background-color: #5b03e4;
+    border-radius: 10px;
+    padding: 15px;
+    position: absolute;
+    top: 70px;
+    right: 20px;
+    width: 200px;
+  }
+
+  .main-nav .nav.show {
+    display: flex;
+  }
+
+  .menu-trigger {
+    display: block;
+  }
+}
+
