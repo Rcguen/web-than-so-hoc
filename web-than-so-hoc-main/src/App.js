@@ -10,6 +10,7 @@ import Footer from './components/Footer';
 import HistoryLookup from './components/HistoryLookup';
 import Login from './components/Login';
 import Register from './components/Register';
+import NumerologyDetails from "./components/NumerologyDetails";
 
 function App() {
   return (
@@ -33,6 +34,7 @@ function App() {
 
           <Route path="/lookup" element={<Lookup />} />
           <Route path="/history" element={<HistoryLookup />} />
+          <Route path="/details/:id" element={<NumerologyDetails />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
         </Routes>

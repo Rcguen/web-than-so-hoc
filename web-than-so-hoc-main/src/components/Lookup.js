@@ -1,164 +1,156 @@
 import React, { useState } from "react";
+import "./Lookup.css";
 
 function Lookup() {
   const [name, setName] = useState("");
   const [birthDate, setBirthDate] = useState("");
   const [result, setResult] = useState(null);
-  const [meaning, setMeaning] = useState(null);
+  const [selectedMeaning, setSelectedMeaning] = useState(null);
+  const [chart, setChart] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const res = await fetch("http://127.0.0.1:5000/api/numerology/calculate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, birth_date: birthDate }),
-    });
+    const currentUser = JSON.parse(localStorage.getItem("user") || "null");
+    const user_id = currentUser?.user_id ?? null;
 
-    const data = await res.json();
-    setResult(data);
+    try {
+      const res = await fetch("http://127.0.0.1:5000/api/numerology/calculate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, birth_date: birthDate, user_id }),
+      });
 
-    const meaningRes = await fetch(
-      `http://127.0.0.1:5000/api/numerology/meaning/${data.lifePath}`
-    );
-    const meaningData = await meaningRes.json();
-    setMeaning(meaningData);
+      if (!res.ok) throw new Error("Không thể kết nối tới server.");
+
+      const data = await res.json();
+      setResult(data);
+
+      // Vẽ biểu đồ ngày sinh
+      const chartRes = await fetch("http://127.0.0.1:5000/api/numerology/birth-chart", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ birth_date: birthDate }),
+      });
+      const chartData = await chartRes.json();
+      setChart(chartData.chart);
+    } catch (err) {
+      alert("Lỗi khi tra cứu: " + err.message);
+    }
+  };
+
+  // Lấy ý nghĩa từng chỉ số
+  const handleViewMeaning = async (category, number) => {
+    try {
+      const res = await fetch(`http://127.0.0.1:5000/api/numerology/meaning/${category}/${number}`);
+      const data = await res.json();
+      setSelectedMeaning(data);
+    } catch {
+      alert("Không thể tải ý nghĩa con số.");
+    }
   };
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: "linear-gradient(180deg, #f6f0ff 0%, #ffffff 100%)",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "50px 0",
-      }}
-    >
-      <h2 style={{ color: "#5b03e4", marginBottom: "20px" }}>
-        🔮 Tra Cứu Số Chủ Đạo
-      </h2>
+    <div className="lookup-section">
+      <div className="lookup-header">
+        <h1>🔮 Tra cứu Thần Số Học miễn phí</h1>
+        <p>
+          Nhập họ tên và ngày sinh của bạn để khám phá 6 chỉ số chính: 
+          Con số chủ đạo, Sứ mệnh, Linh hồn, Nhân cách, Ngày sinh và Trưởng thành.
+        </p>
+      </div>
 
-      <form
-        onSubmit={handleSubmit}
-        style={{
-          background: "white",
-          padding: "30px 40px",
-          borderRadius: "20px",
-          boxShadow: "0 8px 20px rgba(91, 3, 228, 0.15)",
-          textAlign: "center",
-          width: "350px",
-        }}
-      >
+      <form className="lookup-form" onSubmit={handleSubmit}>
         <input
           type="text"
           placeholder="Nhập họ tên..."
           value={name}
           onChange={(e) => setName(e.target.value)}
           required
-          style={{
-            width: "100%",
-            padding: "10px 15px",
-            borderRadius: "10px",
-            border: "1px solid #ccc",
-            marginBottom: "15px",
-          }}
         />
         <input
           type="date"
           value={birthDate}
           onChange={(e) => setBirthDate(e.target.value)}
           required
-          style={{
-            width: "100%",
-            padding: "10px 15px",
-            borderRadius: "10px",
-            border: "1px solid #ccc",
-            marginBottom: "20px",
-          }}
         />
-        <button
-          type="submit"
-          style={{
-            width: "100%",
-            padding: "12px",
-            borderRadius: "10px",
-            backgroundColor: "#5b03e4",
-            color: "white",
-            fontWeight: "bold",
-            border: "none",
-            cursor: "pointer",
-            transition: "0.3s",
-          }}
-        >
-          Tra cứu ngay
-        </button>
+        <button type="submit">Tra cứu ngay</button>
       </form>
 
       {result && (
-  <div
-    style={{
-      textAlign: "center",
-      marginTop: "40px",
-      animation: "fadeIn 1s ease-in-out",
-    }}
-  >
-    <h2>Kết quả:</h2>
-    <p><b>Tên:</b> {result.name}</p>
-    <p><b>Ngày sinh:</b> {result.birthDate}</p>
-    <p>
-      <b>Con số chủ đạo:</b>{" "}
-      <span
-        style={{
-          fontSize: "28px",
-          fontWeight: "bold",
-          color:
-            result.lifePath === 1
-              ? "#ff3b3b"
-              : result.lifePath === 2
-              ? "#0099ff"
-              : result.lifePath === 3
-              ? "#ffb400"
-              : result.lifePath === 4
-              ? "#4caf50"
-              : result.lifePath === 5
-              ? "#ff5722"
-              : result.lifePath === 6
-              ? "#9c27b0"
-              : result.lifePath === 7
-              ? "#3f51b5"
-              : result.lifePath === 8
-              ? "#795548"
-              : result.lifePath === 9
-              ? "#607d8b"
-              : "#5b03e4",
-        }}
-      >
-        {result.lifePath}
-      </span>
-    </p>
+        <div className="lookup-result">
+          <h2>Kết quả của bạn</h2>
+          <div className="result-cards">
+            <div
+              className="result-card"
+              onClick={() => handleViewMeaning("life_path", result.lifePath)}
+            >
+              <h3>🔢 Con Số Chủ Đạo</h3>
+              <p>{result.lifePath}</p>
+            </div>
+            <div
+              className="result-card"
+              onClick={() => handleViewMeaning("destiny", result.destiny)}
+            >
+              <h3>🌟 Sứ Mệnh</h3>
+              <p>{result.destiny}</p>
+            </div>
+            <div
+              className="result-card"
+              onClick={() => handleViewMeaning("soul", result.soul)}
+            >
+              <h3>💖 Linh Hồn</h3>
+              <p>{result.soul}</p>
+            </div>
+            <div
+              className="result-card"
+              onClick={() => handleViewMeaning("personality", result.personality)}
+            >
+              <h3>🧠 Nhân Cách</h3>
+              <p>{result.personality}</p>
+            </div>
+            <div
+              className="result-card"
+              onClick={() => handleViewMeaning("birthday", result.birthday)}
+            >
+              <h3>🎂 Ngày Sinh</h3>
+              <p>{result.birthday}</p>
+            </div>
+            <div
+              className="result-card"
+              onClick={() => handleViewMeaning("maturity", result.maturity)}
+            >
+              <h3>🍂 Trưởng Thành</h3>
+              <p>{result.maturity}</p>
+            </div>
+          </div>
+        </div>
+      )}
 
-    {meaning && (
-      <div
-        style={{
-          marginTop: "20px",
-          backgroundColor: "#f9ebff",
-          padding: "20px",
-          borderRadius: "10px",
-          boxShadow: "0 0 8px rgba(91, 3, 228, 0.2)",
-          width: "60%",
-          margin: "0 auto",
-          animation: "fadeInUp 0.8s ease",
-        }}
-      >
-        <h3>{meaning.title}</h3>
-        <p>{meaning.description}</p>
-      </div>
-    )}
-  </div>
-)}
+      {chart && (
+        <div className="birth-chart">
+          <h2>🔷 Biểu Đồ Ngày Sinh</h2>
+          <div className="chart-grid">
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
+              <div className="chart-cell" key={n}>
+                <h4>{n}</h4>
+                <p>{chart[n] > 0 ? "×" + chart[n] : "-"}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Popup ý nghĩa */}
+      {selectedMeaning && (
+        <div className="popup-overlay" onClick={() => setSelectedMeaning(null)}>
+          <div className="popup-content" onClick={(e) => e.stopPropagation()}>
+            <h2>{selectedMeaning.title}</h2>
+            <p style={{ whiteSpace: "pre-line" }}>{selectedMeaning.description}</p>
+            <button onClick={() => setSelectedMeaning(null)}>Đóng</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
