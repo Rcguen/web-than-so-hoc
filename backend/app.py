@@ -8,10 +8,155 @@ app = Flask(__name__)
 CORS(app)
 app.register_blueprint(auth)
 
-@app.get("/api/health")
-def health():
-    return jsonify({"status": "ok"}), 200
+# =====================================================
+# 🔢 1. HÀM TÍNH TOÁN BIỂU ĐỒ SINH MỆNH (Pythagoras)
+# =====================================================
+def compute_birth_chart_counts(birth_date: str):
+    digits = [int(ch) for ch in birth_date if ch.isdigit()]
+    counts = {i: 0 for i in range(1, 10)}
+    for d in digits:
+        if 1 <= d <= 9:
+            counts[d] += 1
+    return counts
 
+def compute_arrows(counts: dict):
+    """Tính 7 cặp mũi tên mạnh – yếu + 1 mũi tên kế hoạch (1–2–3)."""
+    pair_specs = [
+        {"seq": [1, 5, 9], "strong": "Quyết tâm (1–5–9)",         "weak": "Trì hoãn – trống 1–5–9"},
+        {"seq": [3, 5, 7], "strong": "Tâm linh (3–5–7)",          "weak": "Hoài nghi – trống 3–5–7"},
+        {"seq": [3, 6, 9], "strong": "Trí tuệ (3–6–9)",           "weak": "Trí nhớ ngắn hạn – trống 3–6–9"},
+        {"seq": [2, 5, 8], "strong": "Cân bằng cảm xúc (2–5–8)",  "weak": "Nhạy cảm – trống 2–5–8"},
+        {"seq": [4, 5, 6], "strong": "Ý chí (4–5–6)",             "weak": "Uất giận – trống 4–5–6"},
+        {"seq": [7, 8, 9], "strong": "Hoạt động/Xã hội (7–8–9)",  "weak": "Thụ động – trống 7–8–9"},
+        {"seq": [1, 4, 7], "strong": "Thực tế (1–4–7)",           "weak": "Thiếu trật tự – trống 1–4–7"},
+    ]
+
+    plan_spec = {"seq": [1, 2, 3], "strong": "Kế hoạch (1–2–3)"}
+    arrows_strong, arrows_weak = [], []
+
+    for spec in pair_specs:
+        seq = spec["seq"]
+        if all(counts[n] > 0 for n in seq):
+            arrows_strong.append(spec["strong"])
+        elif all(counts[n] == 0 for n in seq):
+            arrows_weak.append(spec["weak"])
+
+    if all(counts[n] > 0 for n in plan_spec["seq"]):
+        arrows_strong.append(plan_spec["strong"])
+
+    return arrows_strong, arrows_weak
+
+@app.route("/api/numerology/birth-chart", methods=["POST"])
+def birth_chart():
+    data = request.get_json() or {}
+    birth_date = data.get("birth_date")
+    if not birth_date:
+        return jsonify({"error": "Missing birth_date"}), 400
+
+    counts = compute_birth_chart_counts(birth_date)
+    arrows_strong, arrows_weak = compute_arrows(counts)
+
+    return jsonify({
+        "chart": counts,
+        "arrows": {
+            "strong": arrows_strong,
+            "weak": arrows_weak
+        }
+    })
+
+@app.route("/api/numerology/name-chart", methods=["POST"])
+def name_chart():
+    data = request.get_json() or {}
+    name = data.get("name")
+    if not name:
+        return jsonify({"error": "Missing name"}), 400
+
+    # Tạo bản đồ chữ cái -> số (giống Destiny Number)
+    letter_map = {
+        **dict.fromkeys("aijqy", 1), **dict.fromkeys("bkr", 2),
+        **dict.fromkeys("clgs", 3), **dict.fromkeys("dmt", 4),
+        **dict.fromkeys("ehnx", 5), **dict.fromkeys("uvw", 6),
+        **dict.fromkeys("oz", 7), **dict.fromkeys("fp", 8),
+    }
+
+    # Đếm số lần xuất hiện 1–9
+    letters = [c.lower() for c in name if c.isalpha()]
+    counts = {i: 0 for i in range(1, 10)}
+    for c in letters:
+        val = letter_map.get(c, 0)
+        if val:
+            counts[val] += 1
+
+    # Dùng lại hàm tính mũi tên đã có
+    arrows_strong, arrows_weak = compute_arrows(counts)
+
+    return jsonify({
+        "chart": counts,
+        "arrows": {
+            "strong": arrows_strong,
+            "weak": arrows_weak
+        }
+    })
+
+@app.route("/api/numerology/life-pinnacles", methods=["POST"])
+def life_pinnacles():
+    """
+    Tính 4 đỉnh cao cuộc đời (Pinnacles) và 4 thử thách (Challenges)
+    dựa trên ngày sinh theo trường phái Pythagoras.
+    """
+    data = request.get_json() or {}
+    birth_date = data.get("birth_date")
+    if not birth_date:
+        return jsonify({"error": "Thiếu birth_date"}), 400
+
+    try:
+        year, month, day = map(int, birth_date.split("-"))
+    except:
+        return jsonify({"error": "Định dạng ngày sinh không hợp lệ (YYYY-MM-DD)"}), 400
+
+    def r(num):
+        while num > 9 and num not in (11, 22, 33):
+            num = sum(int(c) for c in str(num))
+        return num
+
+    # Gộp các phần số học
+    day_r, month_r, year_r = r(day), r(month), r(sum(int(c) for c in str(year)))
+
+    # Tính 4 đỉnh cao
+    pinnacle_1 = r(day_r + month_r)
+    pinnacle_2 = r(day_r + year_r)
+    pinnacle_3 = r(pinnacle_1 + pinnacle_2)
+    pinnacle_4 = r(month_r + year_r)
+
+    # Tính 4 thử thách
+    challenge_1 = abs(day_r - month_r)
+    challenge_2 = abs(day_r - year_r)
+    challenge_3 = abs(challenge_1 - challenge_2)
+    challenge_4 = abs(month_r - year_r)
+
+    # Độ tuổi đạt đỉnh
+    ages = [28, 37, 46, 55]
+
+    return jsonify({
+        "birth_date": birth_date,
+        "pinnacles": [
+            {"index": 1, "value": pinnacle_1, "age": ages[0]},
+            {"index": 2, "value": pinnacle_2, "age": ages[1]},
+            {"index": 3, "value": pinnacle_3, "age": ages[2]},
+            {"index": 4, "value": pinnacle_4, "age": ages[3]},
+        ],
+        "challenges": [
+            {"index": 1, "value": challenge_1},
+            {"index": 2, "value": challenge_2},
+            {"index": 3, "value": challenge_3},
+            {"index": 4, "value": challenge_4},
+        ]
+    })
+
+
+# =====================================================
+# 🌙 2. CÔNG CỤ HỖ TRỢ TÍNH TOÁN 6 CHỈ SỐ CHÍNH
+# =====================================================
 def reduce_number(num):
     while num > 9 and num not in (11, 22, 33):
         num = sum(int(d) for d in str(num))
@@ -27,6 +172,9 @@ def calculate_from_name(name):
     nums = [values[c] for c in letters if c in values]
     return nums
 
+# =====================================================
+# 🔮 3. API TÍNH TOÁN KẾT QUẢ THẦN SỐ HỌC
+# =====================================================
 @app.route('/api/numerology/calculate', methods=['POST'])
 def calculate_numerology():
     try:
@@ -38,259 +186,114 @@ def calculate_numerology():
         if not name or not birth_date:
             return jsonify({'error': 'Thiếu họ tên hoặc ngày sinh'}), 400
 
-        # ------------------------------
-        # 1️⃣ Con Số Chủ Đạo (Life Path)
+        # --- Các chỉ số ---
         digits = [int(ch) for ch in birth_date if ch.isdigit()]
-        life_path = sum(digits)
-        while life_path > 9 and life_path not in (11, 22, 33):
-            life_path = sum(int(c) for c in str(life_path))
+        life_path = reduce_number(sum(digits))
 
-        # ------------------------------
-        # 2️⃣ Sứ Mệnh (Destiny Number)
         letters = [c.lower() for c in name if c.isalpha()]
         letter_map = {
-            **dict.fromkeys("aijqy", 1),
-            **dict.fromkeys("bkr", 2),
-            **dict.fromkeys("clgs", 3),
-            **dict.fromkeys("dmt", 4),
-            **dict.fromkeys("ehnx", 5),
-            **dict.fromkeys("uvw", 6),
-            **dict.fromkeys("oz", 7),
-            **dict.fromkeys("fp", 8),
+            **dict.fromkeys("aijqy", 1), **dict.fromkeys("bkr", 2),
+            **dict.fromkeys("clgs", 3), **dict.fromkeys("dmt", 4),
+            **dict.fromkeys("ehnx", 5), **dict.fromkeys("uvw", 6),
+            **dict.fromkeys("oz", 7), **dict.fromkeys("fp", 8),
         }
+
         total = sum(letter_map.get(c, 0) for c in letters)
-        while total > 9 and total not in (11, 22, 33):
-            total = sum(int(c) for c in str(total))
-        destiny = total
+        destiny = reduce_number(total)
 
-        # ------------------------------
-        # 3️⃣ Linh Hồn (Soul Number)
         vowels = [c for c in letters if c in "aeiou"]
-        soul = sum(letter_map.get(c, 0) for c in vowels)
-        while soul > 9 and soul not in (11, 22, 33):
-            soul = sum(int(c) for c in str(soul))
+        soul = reduce_number(sum(letter_map.get(c, 0) for c in vowels))
 
-        # ------------------------------
-        # 4️⃣ Nhân Cách (Personality Number)
         consonants = [c for c in letters if c not in "aeiou"]
-        personality = sum(letter_map.get(c, 0) for c in consonants)
-        while personality > 9 and personality not in (11, 22, 33):
-            personality = sum(int(c) for c in str(personality))
+        personality = reduce_number(sum(letter_map.get(c, 0) for c in consonants))
 
-        # ------------------------------
-        # 5️⃣ Ngày Sinh (Birthday Number)
-        try:
-            day = int(birth_date.split('-')[2])
-        except:
-            day = 0
-        birthday = day if day <= 9 or day in (11, 22) else sum(map(int, str(day)))
+        day = int(birth_date.split('-')[2])
+        birthday = day if day <= 9 or day in (11, 22) else reduce_number(day)
 
-        # ------------------------------
-        # 6️⃣ Trưởng Thành (Maturity Number)
-        maturity = life_path + destiny
-        while maturity > 9 and maturity not in (11, 22, 33):
-            maturity = sum(int(c) for c in str(maturity))
+        maturity = reduce_number(life_path + destiny)
 
-        # ------------------------------
-        # Lưu vào cơ sở dữ liệu
+        # --- Lưu DB ---
         conn = get_db_connection()
         cursor = conn.cursor()
-
         cursor.execute("""
             INSERT INTO numerology_results 
-            (user_id, name, birth_date, category, life_path_number, destiny_number, soul_number, summary) 
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            (user_id, name, birth_date, category, life_path_number, destiny_number, soul_number, summary)
+            VALUES (%s, %s, %s, 'lookup', %s, %s, %s, %s)
         """, (
-            user_id, name, birth_date, 'lookup',
-            life_path, destiny, soul,
+            user_id, name, birth_date, life_path, destiny, soul,
             f"LifePath={life_path}, Destiny={destiny}, Soul={soul}"
         ))
-
-        conn.commit()
-        cursor.close()
-        conn.close()
+        conn.commit(); cursor.close(); conn.close()
 
         return jsonify({
-            'name': name,
-            'birthDate': birth_date,
-            'lifePath': life_path,
-            'destiny': destiny,
-            'soul': soul,
-            'personality': personality,
-            'birthday': birthday,
-            'maturity': maturity
+            'name': name, 'birthDate': birth_date,
+            'lifePath': life_path, 'destiny': destiny,
+            'soul': soul, 'personality': personality,
+            'birthday': birthday, 'maturity': maturity
         })
-
     except Exception as e:
-        import traceback
-        traceback.print_exc()
+        import traceback; traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
-    data = request.get_json()
-    name = data["name"]
-    birth_date = data["birth_date"]
-    user_id = data.get("user_id")
-
-    nums = calculate_from_name(name)
-    vowels = [c for c in name.upper() if c in "AEIOU"]
-    consonants = [c for c in name.upper() if c.isalpha() and c not in "AEIOU"]
-
-    life_path = reduce_number(sum(int(x) for x in birth_date.replace("-", "")))
-    destiny = reduce_number(sum(calculate_from_name(name)))
-    soul = reduce_number(sum(calculate_from_name("".join(vowels))))
-    personality = reduce_number(sum(calculate_from_name("".join(consonants))))
-    maturity = reduce_number(life_path + destiny)
-    birth_day = reduce_number(int(birth_date.split("-")[2]))
-
-    result = {
-        "name": name,
-        "birthDate": birth_date,
-        "lifePath": life_path,
-        "destiny": destiny,
-        "soul": soul,
-        "personality": personality,
-        "maturity": maturity,
-        "birthDay": birth_day
-    }
-
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("""
-        INSERT INTO numerology_results (user_id, name, birth_date, category,
-        life_path_number, destiny_number, soul_number, summary, created_at)
-        VALUES (%s, %s, %s, 'detail', %s, %s, %s, '', NOW())
-    """, (user_id, name, birth_date, life_path, destiny, soul))
-    conn.commit()
-    cursor.close()
-    conn.close()
-
-    return jsonify(result)
-
-
+# =====================================================
+# 🕰️ 4. LỊCH SỬ TRA CỨU
+# =====================================================
 @app.route("/api/numerology/history/<int:user_id>", methods=["GET"])
 def get_history(user_id):
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
-
     cursor.execute("""
         SELECT result_id, name, birth_date, life_path_number, destiny_number, soul_number, summary, created_at
         FROM numerology_results
-        WHERE user_id = %s
-        ORDER BY created_at DESC
+        WHERE user_id = %s ORDER BY created_at DESC
     """, (user_id,))
-
     results = cursor.fetchall()
-    cursor.close()
-    conn.close()
-
+    cursor.close(); conn.close()
     return jsonify(results)
 
-
-@app.get("/api/numerology/meaning/<int:number>")
-def get_meaning(number: int):
-    conn = get_db_connection()
-    cur = conn.cursor(dictionary=True)
-    cur.execute("SELECT * FROM numerology_meanings WHERE number=%s", (number,))
-    row = cur.fetchone()
-    cur.close(); conn.close()
-    if not row:
-        return jsonify({'error': 'Không tìm thấy ý nghĩa cho con số này'}), 404
-    return jsonify(row), 200
-
-@app.route("/api/numerology/details/<int:result_id>", methods=["GET"])
-def get_numerology_details(result_id):
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-
-    # Lấy dữ liệu chính từ kết quả
-    cursor.execute("""
-        SELECT result_id, user_id, name, birth_date,
-               life_path_number, destiny_number, soul_number,
-               summary, created_at
-        FROM numerology_results
-        WHERE result_id = %s
-    """, (result_id,))
-    result = cursor.fetchone()
-
-    if not result:
-        cursor.close()
-        conn.close()
-        return jsonify({"error": "Không tìm thấy kết quả"}), 404
-
-    # Lấy diễn giải từ bảng meanings
-    cursor.execute("""
-        SELECT number, title, description
-        FROM numerology_meanings
-        WHERE number IN (%s, %s, %s)
-    """, (
-        result["life_path_number"],
-        result["destiny_number"],
-        result["soul_number"]
-    ))
-    meanings = cursor.fetchall()
-
-    cursor.close()
-    conn.close()
-
-    return jsonify({
-        "info": result,
-        "meanings": meanings
-    })
-@app.route('/api/numerology/birth-chart', methods=['POST'])
-def birth_chart():
-    try:
-        data = request.get_json()
-        birth_date = data.get('birth_date')
-
-        if not birth_date:
-            return jsonify({'error': 'Thiếu ngày sinh'}), 400
-
-        # Tách từng số
-        digits = [int(ch) for ch in birth_date if ch.isdigit()]
-
-        # Đếm số lần xuất hiện (1 đến 9)
-        chart = {i: digits.count(i) for i in range(1, 10)}
-
-        return jsonify({'chart': chart})
-
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/numerology/meaning/<string:type>/<int:number>', methods=['GET'])
-def get_numerology_meaning(type, number):
+# =====================================================
+# 📘 5. LẤY Ý NGHĨA CỦA CÁC CHỈ SỐ
+# =====================================================
+@app.route('/api/numerology/meaning/<string:category>/<int:number>', methods=['GET'])
+def get_numerology_meaning(category, number):
     try:
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
-
         cursor.execute("""
             SELECT * FROM numerology_meanings
             WHERE category = %s AND number = %s
             LIMIT 1
-        """, (type, number))
+        """, (category, number))
         meaning = cursor.fetchone()
-
-        cursor.close()
-        conn.close()
+        cursor.close(); conn.close()
 
         if meaning:
             return jsonify({
                 "number": meaning["number"],
                 "title": meaning["title"],
-                "description": meaning["description"]
+                "description": meaning["description"],
+                "category": meaning["category"]
             })
         else:
             return jsonify({
                 "number": number,
                 "title": f"Ý nghĩa số {number}",
-                "description": "Chưa có mô tả trong cơ sở dữ liệu."
+                "description": "Chưa có mô tả trong cơ sở dữ liệu.",
+                "category": category
             })
-
     except Exception as e:
         print("Lỗi API /meaning:", e)
         return jsonify({"error": str(e)}), 500
 
+# =====================================================
+# ❤️ 6. HEALTH CHECK
+# =====================================================
+@app.get("/api/health")
+def health():
+    return jsonify({"status": "ok"}), 200
 
+# =====================================================
+# 🚀 MAIN ENTRY
+# =====================================================
 if __name__ == "__main__":
     app.run(debug=True)

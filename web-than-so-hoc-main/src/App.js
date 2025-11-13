@@ -11,6 +11,9 @@ import HistoryLookup from './components/HistoryLookup';
 import Login from './components/Login';
 import Register from './components/Register';
 import NumerologyDetails from "./components/NumerologyDetails";
+import BirthChart from "./components/BirthChart.jsx";
+import PersonalYear from "./components/PersonalYear.jsx";
+import Report from "./components/Report.jsx";
 
 function App() {
   return (
@@ -37,6 +40,9 @@ function App() {
           <Route path="/details/:id" element={<NumerologyDetails />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/birth-chart" element={<BirthChart />} />
+<Route path="/personal-year" element={<PersonalYear />} />
+<Route path="/report" element={<Report />} />
         </Routes>
         <Footer />
       </>

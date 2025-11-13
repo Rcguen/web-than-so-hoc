@@ -1,0 +1,53 @@
+.pinnacle-chart {
+  text-align: center;
+  margin-top: 30px;
+}
+
+.pyramid {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+.level {
+  display: flex;
+  justify-content: center;
+  gap: 120px;
+  margin: 40px 0;
+}
+
+.circle {
+  width: 80px;
+  height: 80px;
+  line-height: 80px;
+  border-radius: 50%;
+  font-size: 28px;
+  color: white;
+  font-weight: bold;
+  margin: 0 auto;
+}
+
+.purple {
+  background-color: #5b03e4;
+}
+
+.orange {
+  background-color: #ffb400;
+  width: 50px;
+  height: 50px;
+  line-height: 50px;
+  font-size: 20px;
+  margin-top: 10px;
+}
+
+.label {
+  font-weight: bold;
+  color: #5b03e4;
+  margin-top: 10px;
+}
+
+.label-small {
+  font-size: 14px;
+  color: #888;
+}
