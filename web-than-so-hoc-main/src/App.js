@@ -14,6 +14,9 @@ import NumerologyDetails from "./components/NumerologyDetails";
 import BirthChart from "./components/BirthChart.jsx";
 import PersonalYear from "./components/PersonalYear.jsx";
 import Report from "./components/Report.jsx";
+import Shop from "./pages/Shop.jsx";
+import ProductDetail from "./pages/ProductDetail.jsx";
+
 
 function App() {
   return (
@@ -43,6 +46,9 @@ function App() {
           <Route path="/birth-chart" element={<BirthChart />} />
 <Route path="/personal-year" element={<PersonalYear />} />
 <Route path="/report" element={<Report />} />
+<Route path="/shop" element={<Shop />} />
+<Route path="/product/:id" element={<ProductDetail />} />
+
         </Routes>
         <Footer />
       </>

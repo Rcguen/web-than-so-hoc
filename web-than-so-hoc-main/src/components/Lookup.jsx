@@ -208,10 +208,7 @@ function Lookup() {
       )}
 
       {/* Biểu đồ Đỉnh cao & Thử thách */}
-    <LifePinnaclePyramid
-      birthDate={birthDate}
-      onOpenMeaning={(category, number) => handleViewMeaning(category, number)}
-    />
+    {birthDate && <LifePinnaclePyramid birthDate={birthDate} />}
 
       {/* Popup ý nghĩa chỉ số */}
       {selectedMeaning && (

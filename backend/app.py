@@ -3,10 +3,18 @@ from flask_cors import CORS
 from db import get_db_connection
 from auth import auth
 from datetime import datetime
+from shop.product_routes import product_routes
+from shop.category_routes import category_routes
+from flask import send_from_directory
+import os
+
+UPLOAD_FOLDER = os.path.join(os.getcwd(), "uploads")
 
 app = Flask(__name__)
 CORS(app)
 app.register_blueprint(auth)
+app.register_blueprint(product_routes, url_prefix="/api")
+app.register_blueprint(category_routes, url_prefix="/api")
 
 # =====================================================
 # 🔢 1. HÀM TÍNH TOÁN BIỂU ĐỒ SINH MỆNH (Pythagoras)
@@ -154,6 +162,7 @@ def life_pinnacles():
     })
 
 
+
 # =====================================================
 # 🌙 2. CÔNG CỤ HỖ TRỢ TÍNH TOÁN 6 CHỈ SỐ CHÍNH
 # =====================================================
@@ -291,6 +300,11 @@ def get_numerology_meaning(category, number):
 @app.get("/api/health")
 def health():
     return jsonify({"status": "ok"}), 200
+
+@app.route("/uploads/<path:filename>")
+def serve_uploads(filename):
+    upload_path = os.path.join(os.getcwd(), "uploads")
+    return send_from_directory(upload_path, filename)
 
 # =====================================================
 # 🚀 MAIN ENTRY

@@ -308,3 +308,26 @@
   cursor: pointer;
 }
 
+.category-btn {
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  background: white;
+  cursor: pointer;
+}
+
+.category-btn.active {
+  background: #5b03e4;
+  color: white;
+  border-color: #5b03e4;
+}
+
+.btn-view, .btn-back {
+  margin-top: 10px;
+  padding: 10px 18px;
+  background: #5b03e4;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}

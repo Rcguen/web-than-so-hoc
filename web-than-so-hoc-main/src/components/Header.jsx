@@ -21,14 +21,16 @@ function Header() {
           </NavLink>
 
           <ul className={`nav ${menuOpen ? "show" : ""}`}>
-            <li><NavLink to="/" className="menu-link">Trang Chủ</NavLink></li>
-            <li><NavLink to="/lookup" className="menu-link">Số Chủ Đạo</NavLink></li>
-            <li><a href="#services" className="menu-link">Các Chỉ Số</a></li>
-            <li><a href="#projects" className="menu-link">Báo Cáo Mẫu</a></li>
-            <li><a href="#infos" className="menu-link">Giới Thiệu</a></li>
-            <li><a href="#contact" className="menu-link">Liên Hệ</a></li>
-            <li><NavLink to="/history" className="menu-link">Lịch sử</NavLink></li>
-          </ul>
+    <li><NavLink to="/" className="menu-link">Trang Chủ</NavLink></li>
+    <li><NavLink to="/lookup" className="menu-link">Số Chủ Đạo</NavLink></li>
+    <li><NavLink to="/services" className="menu-link">Các Chỉ Số</NavLink></li>
+    <li><NavLink to="/projects" className="menu-link">Báo Cáo Mẫu</NavLink></li>
+    <li><NavLink to="/infos" className="menu-link">Giới Thiệu</NavLink></li>
+    <li><NavLink to="/contact" className="menu-link">Liên Hệ</NavLink></li>
+    <li><NavLink to="/history" className="menu-link">Lịch Sử</NavLink></li>
+    <li><NavLink to="/shop" className="menu-link">Cửa Hàng</NavLink></li>
+</ul>
+
 
           <div className="right-user">
             {user ? (
