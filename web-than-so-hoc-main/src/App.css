@@ -118,6 +118,7 @@
   list-style: none;
   margin: 0;
   padding: 0;
+  flex-wrap: wrap; /* <--- THÊM DÒNG NÀY */
 }
 
 .nav li {
@@ -330,4 +331,149 @@
   border: none;
   border-radius: 8px;
   cursor: pointer;
+}
+
+/* === FIX CONTAINER CHO HEADER === */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* =============================
+   MENU MOBILE (SIDE PANEL)
+============================= */
+.overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.4);
+  opacity: 0;
+  visibility: hidden;
+  transition: 0.3s;
+  z-index: 998;
+}
+
+.overlay.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+.side-menu {
+  position: fixed;
+  top: 0; right: -300px;
+  width: 260px;
+  height: 100vh;
+  background: white;
+  padding: 20px;
+  box-shadow: -3px 0 15px rgba(0,0,0,0.2);
+  transition: 0.3s;
+  z-index: 999;
+}
+
+.side-menu.open {
+  right: 0;
+}
+
+.side-title {
+  font-size: 20px;
+  font-weight: bold;
+  margin-bottom: 20px;
+}
+
+/* Side menu list */
+.side-nav {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.side-nav li {
+  padding: 12px 5px;
+}
+
+.side-nav li a {
+  color: #5b03e4;
+  text-decoration: none;
+  font-size: 17px;
+  display: block;
+}
+
+/* Dropdown mobile */
+.dropdown span {
+  font-weight: bold;
+  cursor: pointer;
+  color: #5b03e4;
+}
+
+.dropdown-content {
+  display: none;
+  padding-left: 15px;
+}
+
+.dropdown-content.show {
+  display: block;
+}
+
+.dropdown-content li a {
+  font-size: 15px;
+  color: #333;
+}
+
+/* PC dropdown on hover */
+.dropdown-hover {
+  position: relative;
+}
+
+.dropdown-hover span {
+  cursor: pointer;
+  color: #fff;
+}
+
+.dropdown-hover:hover .dropdown-menu {
+  display: block;
+}
+
+.dropdown-menu {
+  position: absolute;
+  display: none;
+  top: 30px;
+  background: #fff;
+  min-width: 200px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+  border-radius: 8px;
+  padding: 10px 0;
+}
+
+.dropdown-menu li {
+  padding: 8px 20px;
+}
+
+.dropdown-menu li a {
+  color: #5b03e4;
+  text-decoration: none;
+}
+
+.dropdown-menu li:hover {
+  background: #f1e7ff;
+}
+
+/* Hide PC menu on mobile */
+.desktop-only {
+  display: flex;
+}
+
+@media (max-width: 991px) {
+  .desktop-only {
+    display: none;
+  }
+
+  .menu-trigger {
+    display: block !important;
+  }
 }

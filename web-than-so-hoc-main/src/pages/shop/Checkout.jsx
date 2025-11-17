@@ -15,12 +15,13 @@ function Checkout() {
   }, []);
 
   const totalPrice = cart.reduce(
-    (sum, item) => sum + item.price * item.quantity,
+    (sum, item) => sum + Number(item.price) * Number(item.qty),
     0
   );
 
   const handleInput = (e) => {
-    setCustomer({ ...customer, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setCustomer((prev) => ({ ...prev, [name]: value }));
   };
 
   const submitOrder = async () => {
@@ -29,32 +30,54 @@ function Checkout() {
       return;
     }
 
-    const res = await fetch("http://127.0.0.1:5000/api/orders", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        customer,
-        cart
-      })
-    });
+    if (cart.length === 0) {
+      alert("Giỏ hàng trống");
+      return;
+    }
 
-    const data = await res.json();
+    try {
+      const res = await fetch("http://127.0.0.1:5000/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customer,
+          cart
+        })
+      });
 
-    if (data.status === "success") {
-      alert("Đặt hàng thành công!");
+      const data = await res.json();
+
+      if (!res.ok || data.status !== "success") {
+        throw new Error(data.message || "Đặt hàng thất bại");
+      }
+
+      alert(`Đặt hàng thành công! Mã đơn: #${data.order_id}`);
 
       // Clear cart
       localStorage.removeItem("cart");
-      window.location.href = "/order-success";
-    } else {
-      alert("Có lỗi xảy ra khi đặt hàng!");
+      setCart([]);
+      setCustomer({
+        fullname: "",
+        phone: "",
+        address: "",
+        notes: ""
+      });
+    } catch (err) {
+      console.error(err);
+      alert("Có lỗi xảy ra khi gửi đơn hàng, vui lòng thử lại.");
     }
   };
 
   return (
-    <div style={{ padding: "80px 30px" }}>
-      <h1 style={{ textAlign: "center", color: "#5b03e4" }}>
-        🧾 Thanh toán
+    <div
+      style={{
+        padding: "40px 20px",
+        background: "#f3ecff",
+        minHeight: "100vh"
+      }}
+    >
+      <h1 style={{ textAlign: "center", marginBottom: "20px" }}>
+        Thanh toán đơn hàng
       </h1>
 
       <div style={{ maxWidth: "600px", margin: "30px auto" }}>
@@ -64,6 +87,7 @@ function Checkout() {
           className="checkout-input"
           placeholder="Họ và tên"
           name="fullname"
+          value={customer.fullname}
           onChange={handleInput}
         />
 
@@ -71,6 +95,7 @@ function Checkout() {
           className="checkout-input"
           placeholder="Số điện thoại"
           name="phone"
+          value={customer.phone}
           onChange={handleInput}
         />
 
@@ -78,6 +103,7 @@ function Checkout() {
           className="checkout-input"
           placeholder="Địa chỉ nhận hàng"
           name="address"
+          value={customer.address}
           onChange={handleInput}
         />
 
@@ -85,6 +111,7 @@ function Checkout() {
           className="checkout-input"
           placeholder="Ghi chú thêm"
           name="notes"
+          value={customer.notes}
           onChange={handleInput}
         />
 
@@ -104,13 +131,13 @@ function Checkout() {
             }}
           >
             <div>
-              <strong>{item.product_name}</strong>
+              <strong>{item.product_name || item.name}</strong>
               <p>
-                {item.quantity} × {item.price.toLocaleString()} đ
+                {item.qty} × {Number(item.price).toLocaleString()} đ
               </p>
             </div>
             <strong style={{ color: "#5b03e4" }}>
-              {(item.price * item.quantity).toLocaleString()} đ
+              {(Number(item.price) * Number(item.qty)).toLocaleString()} đ
             </strong>
           </div>
         ))}
