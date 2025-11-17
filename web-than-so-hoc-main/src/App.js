@@ -2,26 +2,29 @@ import Header from './components/Header';
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Lookup from "./components/Lookup";
 import Hero from './components/Hero';
-import Services from './components/Services';
-import Projects from './components/Projects';
-import Infos from './components/Infos';
-import Contact from './components/Contact';
+import Services from './pages/Services';
+import Projects from './pages/Projects';
+import Infos from './pages/Infos';
+import Contact from './pages/Contact';
 import Footer from './components/Footer';
 import HistoryLookup from './components/HistoryLookup';
 import Login from './components/Login';
 import Register from './components/Register';
-import NumerologyDetails from "./components/NumerologyDetails";
-import BirthChart from "./components/BirthChart.jsx";
+import NumerologyDetails from "./pages/NumerologyDetails";
+import BirthChart from "./pages/BirthChart.jsx";
 import PersonalYear from "./components/PersonalYear.jsx";
-import Report from "./components/Report.jsx";
-import Shop from "./pages/Shop.jsx";
-import ProductDetail from "./pages/ProductDetail.jsx";
+import Report from "./pages/Report.jsx";
+import Shop from "./pages/shop/Shop.jsx";
+import ProductDetail from "./pages/shop/ProductDetail.jsx";
+import Cart from "./pages/cart/Cart";
+import { CartProvider } from "./context/CartContext";
 
 
 function App() {
   return (
     // ✅ Header phải nằm bên trong Router
-    <Router>
+   <CartProvider>
+     <Router>
       <>
         <Header />
         <Routes>
@@ -48,11 +51,13 @@ function App() {
 <Route path="/report" element={<Report />} />
 <Route path="/shop" element={<Shop />} />
 <Route path="/product/:id" element={<ProductDetail />} />
+<Route path="/cart" element={<Cart />} />
 
         </Routes>
         <Footer />
       </>
     </Router>
+   </CartProvider>
   );
 }
 

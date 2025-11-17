@@ -1,0 +1,175 @@
+.cart-container {
+  padding: 80px 40px;
+}
+
+.cart-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.cart-table th {
+  background: #5b03e4;
+  color: white;
+  padding: 10px;
+}
+
+.cart-table td {
+  padding: 12px;
+  border-bottom: 1px solid #eee;
+  text-align: center;
+}
+
+.cart-product {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cart-product img {
+  width: 60px;
+  height: 60px;
+  border-radius: 6px;
+  object-fit: cover;
+}
+
+button {
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.remove-btn {
+  background: red;
+  color: white;
+  border: none;
+  border-radius: 6px;
+}
+
+.cart-total {
+  margin-top: 20px;
+  text-align: right;
+}
+
+.checkout-btn {
+  background: #5b03e4;
+  color: white;
+  padding: 12px 25px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+}
+.cart-container {
+  padding: 80px 40px;
+  max-width: 900px;
+  margin: auto;
+}
+
+.cart-title {
+  text-align: center;
+  color: #5b03e4;
+  margin-bottom: 30px;
+}
+
+.cart-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.cart-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #ffffff;
+  padding: 15px;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+
+.cart-img {
+  width: 120px;
+  height: 120px;
+  border-radius: 12px;
+  object-fit: cover;
+}
+
+.cart-info {
+  flex: 1;
+  margin-left: 20px;
+}
+
+.cart-price {
+  color: #5b03e4;
+  font-weight: bold;
+}
+
+.quantity-control {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.quantity-control button {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: #5b03e4;
+  color: white;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.cart-actions {
+  text-align: right;
+}
+
+.cart-total {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.remove-btn {
+  margin-top: 10px;
+  background: #ff3b3b;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.cart-summary {
+  margin-top: 40px;
+  text-align: center;
+}
+
+.grand-total {
+  font-size: 24px;
+  color: #5b03e4;
+  margin: 10px 0 20px;
+}
+
+.checkout-btn {
+  padding: 12px 24px;
+  background: #5b03e4;
+  border: none;
+  color: white;
+  font-size: 16px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.cart-empty {
+  text-align: center;
+  padding: 120px 20px;
+}
+
+.go-shop-btn {
+  padding: 12px 24px;
+  background: #5b03e4;
+  border: none;
+  color: white;
+  border-radius: 8px;
+  margin-top: 20px;
+  cursor: pointer;
+}

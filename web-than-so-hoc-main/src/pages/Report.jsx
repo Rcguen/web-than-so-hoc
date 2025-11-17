@@ -1,7 +1,7 @@
 import React from "react";
-import Lookup from "./Lookup.jsx";
+import Lookup from "../components/Lookup.jsx";
 import BirthChart from "./BirthChart.jsx";
-import LifePinnaclePyramid from "./LifePinnaclePyramid.jsx";
+import LifePinnaclePyramid from "../components/LifePinnaclePyramid.jsx";
 
 function Report() {
   return (

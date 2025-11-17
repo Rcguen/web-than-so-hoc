@@ -29,6 +29,7 @@ function Header() {
     <li><NavLink to="/contact" className="menu-link">Liên Hệ</NavLink></li>
     <li><NavLink to="/history" className="menu-link">Lịch Sử</NavLink></li>
     <li><NavLink to="/shop" className="menu-link">Cửa Hàng</NavLink></li>
+    <li><NavLink to="/cart" className="menu-link">Giỏ Hàng</NavLink></li>
 </ul>
 
 

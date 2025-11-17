@@ -301,10 +301,10 @@ def get_numerology_meaning(category, number):
 def health():
     return jsonify({"status": "ok"}), 200
 
-@app.route("/uploads/<path:filename>")
+@app.route('/uploads/<path:filename>')
 def serve_uploads(filename):
-    upload_path = os.path.join(os.getcwd(), "uploads")
-    return send_from_directory(upload_path, filename)
+    upload_folder = os.path.join(os.getcwd(), 'uploads')
+    return send_from_directory(upload_folder, filename)
 
 # =====================================================
 # 🚀 MAIN ENTRY

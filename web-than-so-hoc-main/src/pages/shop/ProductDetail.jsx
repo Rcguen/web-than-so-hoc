@@ -44,9 +44,33 @@ function ProductDetail() {
 
           <p className="description">{product.description}</p>
 
-          <button className="btn-add-cart">
-            🛒 Thêm vào giỏ hàng
-          </button>
+          <button
+  className="btn-add-cart"
+  onClick={() => {
+    let cart = JSON.parse(localStorage.getItem("cart") || "[]");
+
+    const existed = cart.find((item) => item.product_id === product.product_id);
+
+    const priceNumber = Number(product.price); // ÉP KIỂU TẠI ĐÂY
+
+    if (existed) {
+      existed.qty += 1;
+    } else {
+      cart.push({
+        ...product,
+        price: priceNumber,  // GHI ĐÈ GIÁ THÀNH SỐ
+        qty: 1
+      });
+    }
+
+    localStorage.setItem("cart", JSON.stringify(cart));
+    alert("Đã thêm vào giỏ hàng!");
+  }}
+>
+  Thêm vào giỏ
+</button>
+
+
         </div>
 
       </div>

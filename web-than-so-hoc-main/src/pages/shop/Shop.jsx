@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import "./Shop.css";
+import "./Page.css";
 
 function Shop() {
   const [categories, setCategories] = useState([]);
