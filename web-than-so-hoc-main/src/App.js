@@ -18,7 +18,7 @@ import Shop from "./pages/shop/Shop.jsx";
 import ProductDetail from "./pages/shop/ProductDetail.jsx";
 import Cart from "./pages/cart/Cart";
 import { CartProvider } from "./context/CartContext";
-
+import  Checkout  from "./pages/shop/Checkout.jsx";
 
 function App() {
   return (
@@ -52,6 +52,7 @@ function App() {
 <Route path="/shop" element={<Shop />} />
 <Route path="/product/:id" element={<ProductDetail />} />
 <Route path="/cart" element={<Cart />} />
+<Route path="/checkout" element={<Checkout />} />
 
         </Routes>
         <Footer />

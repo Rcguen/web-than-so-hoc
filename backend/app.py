@@ -7,6 +7,9 @@ from shop.product_routes import product_routes
 from shop.category_routes import category_routes
 from flask import send_from_directory
 import os
+from shop.order_routes import order_routes
+
+
 
 UPLOAD_FOLDER = os.path.join(os.getcwd(), "uploads")
 
@@ -15,6 +18,7 @@ CORS(app)
 app.register_blueprint(auth)
 app.register_blueprint(product_routes, url_prefix="/api")
 app.register_blueprint(category_routes, url_prefix="/api")
+app.register_blueprint(order_routes, url_prefix="/api")
 
 # =====================================================
 # 🔢 1. HÀM TÍNH TOÁN BIỂU ĐỒ SINH MỆNH (Pythagoras)

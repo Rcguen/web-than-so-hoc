@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import "./Cart.css";
+import { Link } from "react-router-dom";
 
 function Cart() {
   const [cart, setCart] = useState([]);
@@ -80,7 +81,9 @@ function Cart() {
         <h2>Tổng thanh toán:</h2>
         <p className="cart-total">{total.toLocaleString()} đ</p>
 
-        <button className="checkout-btn">Thanh toán</button>
+        <Link to="/checkout">
+          <button className="checkout-btn">Tiến hành thanh toán</button>
+        </Link>
       </div>
     </div>
   );
