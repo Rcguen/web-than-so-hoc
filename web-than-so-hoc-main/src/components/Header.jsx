@@ -3,23 +3,23 @@ import { NavLink, useNavigate } from "react-router-dom";
 
 function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(null);
   const navigate = useNavigate();
   
-  // Tăng chiều cao lên 80px để logo trông to và thoáng hơn
   const HEADER_HEIGHT = "80px"; 
-  
   const user = JSON.parse(localStorage.getItem("user") || "null");
 
   const handleLogout = () => {
     localStorage.removeItem("user");
     localStorage.removeItem("token");
     navigate("/login");
+    setMenuOpen(false);
   };
 
   useEffect(() => {
     document.body.style.margin = "0";
     document.body.style.padding = "0";
-    document.body.style.paddingTop = HEADER_HEIGHT; // Đẩy nội dung xuống
+    document.body.style.paddingTop = HEADER_HEIGHT;
     return () => { document.body.style.paddingTop = "0px"; };
   }, []);
 
@@ -28,223 +28,181 @@ function Header() {
       <style>{`
         * { box-sizing: border-box; }
         
-        /* --- HEADER STYLE --- */
+        /* --- 1. HEADER CHÍNH --- */
         .header-area {
-          position: fixed;
-          top: 0; left: 0;
-          width: 100%;
-          height: ${HEADER_HEIGHT};
+          position: fixed; top: 0; left: 0; width: 100%; height: ${HEADER_HEIGHT};
           background: linear-gradient(to right, #7a00ff, #aa00ff);
-          z-index: 1000;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-          display: flex; 
-          align-items: center; /* MẤU CHỐT: Canh giữa tất cả theo chiều dọc */
+          z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+          display: flex; align-items: center;
         }
-
         .header-area .container {
-          max-width: 100%; /* Dùng full màn hình như YouTube (hoặc để 1400px) */
-          padding: 0 30px; /* Khoảng cách lề trái phải cho thoáng */
-          width: 100%;
-          height: 100%;
+          width: 100%; padding: 0 20px; display: flex; justify-content: space-between; align-items: center;
         }
+        .logo img { height: 55px; width: auto; object-fit: contain; transform: translateY(-2px); }
 
-        .main-nav {
-          display: flex;
-          align-items: center; /* Canh giữa dọc */
-          justify-content: space-between; /* Logo trái - Menu phải */
-          height: 100%;
+        /* --- KHU VỰC PHẢI --- */
+        .header-right { display: flex; align-items: center; gap: 15px; }
+
+        /* Nút Auth trên Header */
+        .header-auth { display: flex; align-items: center; gap: 10px; }
+        .btn-header-auth {
+          text-decoration: none; font-size: 14px; font-weight: 600; padding: 8px 16px;
+          border-radius: 20px; transition: all 0.2s; white-space: nowrap;
         }
+        .btn-login-h { color: #fff; background: rgba(255,255,255,0.1); }
+        .btn-login-h:hover { background: rgba(255,255,255,0.2); }
+        .btn-register-h { background: #fff; color: #7a00ff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .btn-register-h:hover { transform: translateY(-1px); box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+        
+        /* User đã đăng nhập */
+        .user-info-h { display: flex; align-items: center; gap: 10px; }
+        .user-name { color: #fff; font-weight: bold; font-size: 14px; max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .btn-logout-h { background: transparent; border: 1px solid rgba(255,255,255,0.5); color: #fff; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 12px; }
+        .btn-logout-h:hover { background: rgba(255,255,255,0.1); border-color: #fff; }
 
-        /* --- LOGO TO VÀ CANH GIỮA --- */
-        .logo {
-          display: flex;
-          align-items: center; /* Đảm bảo ảnh nằm giữa vùng chứa */
-          height: 100%;        /* Chiều cao bằng Header */
-          text-decoration: none;
-          flex-shrink: 0;      /* Không bị co lại khi màn hình nhỏ */
+        /* --- TRIGGER BUTTON --- */
+        .menu-trigger {
+          display: flex; flex-direction: column; justify-content: space-between;
+          width: 36px; height: 36px; padding: 9px; cursor: pointer; z-index: 2001; 
+          background: rgba(255,255,255,0.2); border-radius: 50%; transition: background 0.2s;
+        }
+        .menu-trigger:hover, .menu-trigger.active { background: rgba(255,255,255,0.35); }
+        .menu-trigger span { display: block; height: 2px; width: 100%; background: #fff; border-radius: 2px; transition: all 0.3s; }
+        .menu-trigger.active span:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
+        .menu-trigger.active span:nth-child(2) { opacity: 0; }
+        .menu-trigger.active span:nth-child(3) { transform: rotate(-45deg) translate(5px, -6px); }
+
+        /* --- POPUP MENU --- */
+        .popup-menu {
+          position: fixed; top: 75px; right: 15px; width: 280px;
+          background: #fff; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+          z-index: 2000; opacity: 0; visibility: hidden;
+          transform: translateY(-20px) scale(0.95);
+          transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+          padding-bottom: 10px;
+        }
+        .popup-menu.show { opacity: 1; visibility: visible; transform: translateY(0) scale(1); }
+
+        .popup-nav { list-style: none; padding: 10px; margin: 0; }
+        .popup-nav li { margin-bottom: 5px; }
+
+        .popup-nav a, .popup-nav .menu-item-span {
+          display: flex; align-items: center; padding: 12px 15px;
+          border-radius: 8px; color: #333; text-decoration: none;
+          font-weight: 500; font-size: 15px; transition: background 0.2s; cursor: pointer;
         }
         
-       .logo img {
-          height: 120px;
-          width: auto;
-          object-fit: contain;
-          display: block;
-          
-          /* ===> THÊM DÒNG NÀY ĐỂ NHÍCH LOGO LÊN <=== */
-          transform: translateY(-13px); 
-          /* Chỉnh số -5 thành -8 hoặc -10 nếu muốn lên cao hơn nữa */
-        }
-
-        /* MENU BÊN PHẢI */
-        .desktop-wrapper {
-          display: flex;
-          align-items: center;
-          gap: 30px;
-        }
-
-        .nav {
-          display: flex;
-          list-style: none;
-          margin: 0; padding: 0;
-          gap: 25px;
-        }
-        .nav li a {
-          color: #fff;
-          text-decoration: none;
-          font-weight: 500;
-          font-size: 15px;
-          text-transform: uppercase;
-          transition: opacity 0.2s;
-        }
-        .nav li a:hover { opacity: 0.7; }
-
-        /* USER ACTIONS */
-        .right-user {
-          display: flex;
-          align-items: center;
-          gap: 15px;
-        }
-        .user-text {
-          color: #fff;
-          font-weight: 600;
-          margin-right: 5px;
-          font-size: 14px;
-        }
+        /* Hiệu ứng Hover */
+        .popup-nav a:hover, .popup-nav .menu-item-span:hover { background: #f0f2f5; }
         
-        .btn-auth {
-          padding: 9px 22px;
-          border-radius: 50px;
-          font-size: 14px;
-          font-weight: 600;
-          text-decoration: none;
-          cursor: pointer;
-          white-space: nowrap;
-          transition: all 0.2s ease;
-        }
-        
-        .btn-login {
-          border: 1px solid rgba(255,255,255,0.7);
-          color: #fff;
-          background: transparent;
-        }
-        .btn-login:hover {
-          border-color: #fff;
-          background: rgba(255,255,255,0.1);
+        /* Hiệu ứng khi đang ở trang đó (Active) */
+        .popup-nav a.active { background: #f3e8ff; color: #7a00ff; font-weight: 700; }
+        .popup-nav a.active .icon-dot { background: #7a00ff; color: #fff; }
+
+        .icon-dot {
+          width: 30px; height: 30px; background: #eee; border-radius: 50%;
+          margin-right: 12px; display: flex; align-items: center; justify-content: center;
+          color: #7a00ff; font-size: 14px; transition: all 0.2s;
         }
 
-        .btn-register, .btn-logout {
-          background: #fff;
-          color: #7a00ff;
-          border: none;
-        }
-        .btn-register:hover, .btn-logout:hover {
-          background: #f0f0f0;
-          transform: translateY(-1px);
-        }
+        /* Sub Menu */
+        .sub-menu { padding-left: 45px; display: none; }
+        .sub-menu.show { display: block; }
+        .sub-menu a { padding: 8px 0; font-size: 14px; color: #666; }
+        .sub-menu a:hover { color: #7a00ff; text-decoration: underline; background: transparent; }
+        .sub-menu a.active { color: #7a00ff; font-weight: bold; }
 
-        /* MOBILE */
-        .menu-trigger { display: none; cursor: pointer; }
-        .menu-trigger span {
-          display: block; width: 26px; height: 3px;
-          background: #fff; margin-bottom: 5px;
-          border-radius: 4px;
-        }
+        /* Overlay */
+        .menu-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1999; display: none; }
+        .menu-overlay.show { display: block; }
 
-        @media (max-width: 991px) {
-          .menu-trigger { display: block; }
-          .desktop-wrapper {
-            position: fixed;
-            top: ${HEADER_HEIGHT};
-            right: -100%;
-            width: 280px;
-            height: calc(100vh - ${HEADER_HEIGHT});
-            background: #fff;
-            flex-direction: column;
-            padding: 20px;
-            transition: right 0.3s ease;
-            box-shadow: -5px 0 15px rgba(0,0,0,0.1);
-            align-items: flex-start;
-            gap: 20px;
-          }
-          .desktop-wrapper.show-mobile { right: 0; }
-          
-          .nav { flex-direction: column; width: 100%; gap: 0; }
-          .nav li a { color: #333; padding: 15px 0; display: block; border-bottom: 1px solid #eee; }
-          
-          .right-user { flex-direction: column; width: 100%; margin-top: 10px; }
-          .user-text { color: #333; }
-          .btn-login, .btn-register, .btn-logout { width: 100%; text-align: center; border: 1px solid #7a00ff; padding: 10px; margin-bottom: 10px; }
-          .btn-login { color: #7a00ff; }
-          .btn-register { background: #7a00ff; color: #fff; }
+        @media (max-width: 500px) {
+           .btn-login-h { display: none; } 
+           .btn-header-auth { padding: 6px 12px; font-size: 12px; }
         }
-
-        .react-overlay {
-          position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-          background: rgba(0,0,0,0.5);
-          z-index: 900;
-          opacity: 0; visibility: hidden;
-          transition: all 0.3s;
-        }
-        .react-overlay.show { opacity: 1; visibility: visible; }
       `}</style>
 
-      <div id="react-header-wrapper">
-        <div 
-          className={`react-overlay ${menuOpen ? "show" : ""}`}
-          onClick={() => setMenuOpen(false)}
-        ></div>
+      <div className={`menu-overlay ${menuOpen ? "show" : ""}`} onClick={() => setMenuOpen(false)}></div>
 
-        <header className="header-area">
-          <div className="container">
-            <nav className="main-nav">
-              
-              {/* LOGO: Đã chỉnh to và canh giữa */}
-              <NavLink to="/" className="logo">
-                <img src="/assets/images/logo.png" alt="Logo" />
-              </NavLink>
-              
-              <div className={`desktop-wrapper ${menuOpen ? "show-mobile" : ""}`}>
-                <ul className="nav">
-                  <li><NavLink to="/" onClick={() => setMenuOpen(false)}>Trang Chủ</NavLink></li>
-                  <li><NavLink to="/shop" onClick={() => setMenuOpen(false)}>Cửa Hàng</NavLink></li>
-                  <li><NavLink to="/cart" onClick={() => setMenuOpen(false)}>Giỏ Hàng</NavLink></li>
-                  <li><NavLink to="/contact" onClick={() => setMenuOpen(false)}>Liên Hệ</NavLink></li>
-                </ul>
+      <header className="header-area">
+        <div className="container">
+          <NavLink to="/" className="logo">
+            <img src="/assets/images/logo.png" alt="Logo" />
+          </NavLink>
 
-                <div className="right-user">
-                  {user ? (
-                    <>
-                      <span className="user-text">Chào, {user.full_name}</span>
-                      <button className="btn-auth btn-logout" onClick={handleLogout}>
-                        Đăng Xuất
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <NavLink to="/login" className="btn-auth btn-login" onClick={() => setMenuOpen(false)}>
-                        Đăng Nhập
-                      </NavLink>
-                      <NavLink to="/register" className="btn-auth btn-register" onClick={() => setMenuOpen(false)}>
-                        Đăng Ký
-                      </NavLink>
-                    </>
-                  )}
+          <div className="header-right">
+            <div className="header-auth">
+              {user ? (
+                <div className="user-info-h">
+                   <span className="user-name">Hi, {user.full_name.split(' ').pop()}</span>
+                   <button className="btn-logout-h" onClick={handleLogout}>Thoát</button>
                 </div>
-              </div> 
-              
-              <div 
-                className="menu-trigger"
-                onClick={() => setMenuOpen(!menuOpen)}
-              >
-                <span></span>
-                <span></span>
-                <span></span>
-              </div>
+              ) : (
+                <>
+                  <NavLink to="/login" className="btn-header-auth btn-login-h">Đăng Nhập</NavLink>
+                  <NavLink to="/register" className="btn-header-auth btn-register-h">Đăng Ký</NavLink>
+                </>
+              )}
+            </div>
 
-            </nav>
+            <div className={`menu-trigger ${menuOpen ? "active" : ""}`} onClick={() => setMenuOpen(!menuOpen)}>
+              <span></span><span></span><span></span>
+            </div>
           </div>
-        </header>
-      </div> 
+
+          {/* --- MENU POPUP ĐÃ ĐƯỢC CẤU HÌNH LINK --- */}
+          <div className={`popup-menu ${menuOpen ? "show" : ""}`}>
+            <ul className="popup-nav">
+              
+              {/* 1. TRANG CHỦ (Bấm vào là đóng menu + chuyển trang) */}
+              <li>
+                <NavLink to="/" onClick={() => setMenuOpen(false)}>
+                  <span className="icon-dot">🏠</span> Trang Chủ
+                </NavLink>
+              </li>
+              
+              {/* 2. THẦN SỐ HỌC (Dropdown - Chỉ mở menu con) */}
+              <li>
+                <div className="menu-item-span" onClick={() => setDropdownOpen(dropdownOpen === 1 ? null : 1)}>
+                  <span className="icon-dot">🔮</span> 
+                  <div style={{flex: 1}}>Thần Số Học</div>
+                  <span style={{fontSize: '12px', color: '#999'}}>{dropdownOpen === 1 ? '▲' : '▼'}</span>
+                </div>
+                
+                {/* MENU CON (Bấm vào là chuyển trang) */}
+                <div className={`sub-menu ${dropdownOpen === 1 ? "show" : ""}`}>
+                  <NavLink to="/lookup" onClick={() => setMenuOpen(false)}>Tra Cứu</NavLink>
+                  <NavLink to="/services" onClick={() => setMenuOpen(false)}>Các Chỉ Số</NavLink>
+                  <NavLink to="/projects" onClick={() => setMenuOpen(false)}>Báo Cáo Mẫu</NavLink>
+                  <NavLink to="/history" onClick={() => setMenuOpen(false)}>Lịch Sử</NavLink>
+                </div>
+              </li>
+
+              {/* 3. CỬA HÀNG */}
+              <li>
+                <NavLink to="/shop" onClick={() => setMenuOpen(false)}>
+                  <span className="icon-dot">🛍️</span> Cửa Hàng
+                </NavLink>
+              </li>
+
+              {/* 4. GIỎ HÀNG */}
+              <li>
+                <NavLink to="/cart" onClick={() => setMenuOpen(false)}>
+                  <span className="icon-dot">🛒</span> Giỏ Hàng
+                </NavLink>
+              </li>
+
+              {/* 5. LIÊN HỆ */}
+              <li>
+                <NavLink to="/contact" onClick={() => setMenuOpen(false)}>
+                  <span className="icon-dot">📞</span> Liên Hệ
+                </NavLink>
+              </li>
+
+            </ul>
+          </div>
+        </div>
+      </header>
     </>
   );
 }
