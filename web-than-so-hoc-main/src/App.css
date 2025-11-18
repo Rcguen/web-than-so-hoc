@@ -1,0 +1,479 @@
+/* ========== BASE ========== */
+.App {
+  text-align: center;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-15px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ========== THANH TRÊN CÙNG (PRE-HEADER) ========== */
+.pre-header {
+  background: linear-gradient(90deg, #5b03e4, #9b3efc);
+  color: white;
+  padding: 8px 40px;
+  font-size: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  animation: fadeInDown 0.6s ease;
+}
+
+.pre-header .left-info ul {
+  display: flex;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  gap: 15px;
+}
+
+.pre-header .left-info li i {
+  margin-right: 5px;
+  color: #ffd700;
+}
+
+/* Góc phải của thanh trên */
+.pre-header .right-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Nút đăng nhập, đăng ký, đăng xuất */
+.btn-login,
+.btn-register,
+.btn-logout {
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-weight: bold;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  border: none;
+}
+
+/* Nút Đăng Nhập - nền vàng */
+.btn-login {
+  background-color: #ffd700;
+  color: #5b03e4;
+  box-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
+}
+.btn-login:hover {
+  background-color: #fff;
+  transform: translateY(-2px);
+}
+
+/* Nút Đăng Ký - viền vàng nền trong suốt */
+.btn-register {
+  background-color: transparent;
+  border: 2px solid #ffd700;
+  color: #ffd700;
+  box-shadow: 0 0 8px rgba(255, 215, 0, 0.3);
+}
+.btn-register:hover {
+  background-color: #ffd700;
+  color: #5b03e4;
+  transform: translateY(-2px);
+}
+
+/* Nút Đăng Xuất - đỏ */
+.btn-logout {
+  background-color: #ff4c4c;
+  color: #fff;
+  box-shadow: 0 0 8px rgba(255, 76, 76, 0.5);
+}
+.btn-logout:hover {
+  background-color: #ff2b2b;
+  transform: scale(1.05);
+}
+
+/* ========== HEADER CHÍNH (MENU) ========== */
+.header-area {
+  background-color: #5b03e4;
+  padding: 15px 40px;
+  position: sticky;
+  top: 0;
+  z-index: 999;
+}
+
+.main-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+}
+
+/* Menu trái */
+.nav {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 20px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex-wrap: wrap; /* <--- THÊM DÒNG NÀY */
+}
+
+.nav li {
+  display: inline-block;
+}
+
+.menu-link {
+  color: #fff;
+  text-decoration: none;
+  padding: 8px 16px;
+  font-weight: 500;
+  transition: 0.3s;
+  cursor: pointer;
+}
+
+.menu-link:hover {
+  color: #ffd700;
+  transform: translateY(-2px);
+}
+
+.menu-link.active {
+  color: #ffd700;
+  border-bottom: 2px solid #ffd700;
+}
+
+/* ========== MENU MOBILE ========== */
+.menu-trigger {
+  display: none;
+  cursor: pointer;
+  width: 35px;
+  height: 25px;
+  position: relative;
+}
+
+.menu-trigger span,
+.menu-trigger span::before,
+.menu-trigger span::after {
+  content: "";
+  background-color: #fff;
+  height: 3px;
+  width: 100%;
+  position: absolute;
+  left: 0;
+  transition: 0.4s;
+}
+
+.menu-trigger span {
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.menu-trigger span::before {
+  top: -10px;
+}
+
+.menu-trigger span::after {
+  top: 10px;
+}
+
+.menu-trigger.active span {
+  background-color: transparent;
+}
+
+.menu-trigger.active span::before {
+  transform: rotate(45deg);
+  top: 0;
+}
+
+.menu-trigger.active span::after {
+  transform: rotate(-45deg);
+  top: 0;
+}
+
+/* Khi ở màn nhỏ */
+@media (max-width: 991px) {
+  .main-nav {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .main-nav .nav {
+    display: none;
+    flex-direction: column;
+    background-color: #5b03e4;
+    border-radius: 10px;
+    padding: 15px;
+    position: absolute;
+    top: 70px;
+    right: 20px;
+    width: 200px;
+  }
+
+  .main-nav .nav.show {
+    display: flex;
+  }
+
+  .menu-trigger {
+    display: block;
+    position: absolute;
+    right: 20px;
+    top: 25px;
+  }
+}
+  .pyramid-wrap {
+  background: #fff;
+  border-radius: 16px;
+  padding: 16px 20px 6px;
+  box-shadow: 0 8px 24px rgba(91, 3, 228, 0.12);
+  margin: 28px auto 8px;
+  max-width: 820px;
+}
+
+.pyramid-legend {
+  display: flex;
+  gap: 18px;
+  justify-content: center;
+  align-items: center;
+  padding: 6px 0 14px;
+  color: #444;
+  font-size: 14px;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  display: inline-block;
+  border-radius: 50%;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+.dot-pur { background: #5b03e4; }
+.dot-ylw { background: #ffb400; }
+
+.fade-in {
+  animation: fadeIn 0.8s ease-in-out;
+}
+
+.services-page, .projects-page, .infos-page, .contact-page {
+  padding: 100px 20px;
+  max-width: 900px;
+  margin: auto;
+  text-align: center;
+}
+
+.services-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 25px;
+  margin-top: 40px;
+}
+
+.service-card {
+  background: white;
+  border-radius: 15px;
+  box-shadow: 0 5px 15px rgba(91,3,228,0.1);
+  padding: 20px;
+  transition: 0.3s;
+}
+.service-card:hover {
+  transform: translateY(-6px);
+}
+.service-card img {
+  width: 100%;
+  border-radius: 10px;
+}
+.download-btn {
+  display: inline-block;
+  background: #5b03e4;
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 10px;
+  text-decoration: none;
+  margin-top: 20px;
+}
+.contact-form input, .contact-form textarea {
+  width: 100%;
+  padding: 12px;
+  margin: 10px 0;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}
+.contact-form button {
+  background: #5b03e4;
+  color: white;
+  border: none;
+  padding: 12px 25px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.category-btn {
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  background: white;
+  cursor: pointer;
+}
+
+.category-btn.active {
+  background: #5b03e4;
+  color: white;
+  border-color: #5b03e4;
+}
+
+.btn-view, .btn-back {
+  margin-top: 10px;
+  padding: 10px 18px;
+  background: #5b03e4;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+/* === FIX CONTAINER CHO HEADER === */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* =============================
+   MENU MOBILE (SIDE PANEL)
+============================= */
+.overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.4);
+  opacity: 0;
+  visibility: hidden;
+  transition: 0.3s;
+  z-index: 998;
+}
+
+.overlay.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+.side-menu {
+  position: fixed;
+  top: 0; right: -300px;
+  width: 260px;
+  height: 100vh;
+  background: white;
+  padding: 20px;
+  box-shadow: -3px 0 15px rgba(0,0,0,0.2);
+  transition: 0.3s;
+  z-index: 999;
+}
+
+.side-menu.open {
+  right: 0;
+}
+
+.side-title {
+  font-size: 20px;
+  font-weight: bold;
+  margin-bottom: 20px;
+}
+
+/* Side menu list */
+.side-nav {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.side-nav li {
+  padding: 12px 5px;
+}
+
+.side-nav li a {
+  color: #5b03e4;
+  text-decoration: none;
+  font-size: 17px;
+  display: block;
+}
+
+/* Dropdown mobile */
+.dropdown span {
+  font-weight: bold;
+  cursor: pointer;
+  color: #5b03e4;
+}
+
+.dropdown-content {
+  display: none;
+  padding-left: 15px;
+}
+
+.dropdown-content.show {
+  display: block;
+}
+
+.dropdown-content li a {
+  font-size: 15px;
+  color: #333;
+}
+
+/* PC dropdown on hover */
+.dropdown-hover {
+  position: relative;
+}
+
+.dropdown-hover span {
+  cursor: pointer;
+  color: #fff;
+}
+
+.dropdown-hover:hover .dropdown-menu {
+  display: block;
+}
+
+.dropdown-menu {
+  position: absolute;
+  display: none;
+  top: 30px;
+  background: #fff;
+  min-width: 200px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+  border-radius: 8px;
+  padding: 10px 0;
+}
+
+.dropdown-menu li {
+  padding: 8px 20px;
+}
+
+.dropdown-menu li a {
+  color: #5b03e4;
+  text-decoration: none;
+}
+
+.dropdown-menu li:hover {
+  background: #f1e7ff;
+}
+
+/* Hide PC menu on mobile */
+.desktop-only {
+  display: flex;
+}
+
+@media (max-width: 991px) {
+  .desktop-only {
+    display: none;
+  }
+
+  .menu-trigger {
+    display: block !important;
+  }
+}
