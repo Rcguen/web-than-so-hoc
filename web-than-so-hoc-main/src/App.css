@@ -470,14 +470,25 @@ body, #root, .App {
 }
 
 /* Center container content in header */
+/* ===> ĐÂY LÀ ĐOẠN QUAN TRỌNG ĐỂ FIX LỖI "DƯ 2 BÊN" <=== */
 .header-area .container {
   display: flex;
   align-items: center;
-  justify-content: center;
-  width: 100%;
-  padding: 0 !important;
+  justify-content: space-between;
+  
+  /* Ép buộc chiều rộng luôn là 100% màn hình */
+  width: 100% !important; 
+  
+  /* Gỡ bỏ giới hạn chiều rộng tối đa (quan trọng cho màn hình lớn) */
+  max-width: none !important; 
+  
+  /* Padding 2 bên để nội dung không dính sát mép */
+  padding: 0 40px !important; 
+  
+  height: 100%;
   margin: 0 !important;
 }
+
 
 /* Main nav organization */
 .main-nav {
