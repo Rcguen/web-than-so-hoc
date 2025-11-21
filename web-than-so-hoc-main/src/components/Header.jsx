@@ -282,6 +282,12 @@ function Header() {
 
           {/* CÁC MỤC KHÁC */}
           <li>
+            <NavLink to="/admin" onClick={() => setMenuOpen(false)}>
+              <div className="icon-dot">🎉</div>
+              Admin Panel
+            </NavLink>
+          </li>
+          <li>
             <NavLink to="/shop" onClick={() => setMenuOpen(false)}>
               <div className="icon-dot">🛒</div>
               Cửa Hàng

@@ -19,6 +19,10 @@ import ProductDetail from "./pages/shop/ProductDetail.jsx";
 import Cart from "./pages/cart/Cart";
 import { CartProvider } from "./context/CartContext";
 import  Checkout  from "./pages/shop/Checkout.jsx";
+import AdminLayout from "./admin/AdminLayout";
+import Dashboard from "./admin/pages/Dashboard";
+import Orders from "./admin/pages/Orders";
+import OrderDetail from "./admin/pages/OrderDetail";
 
 function App() {
   return (
@@ -53,12 +57,20 @@ function App() {
 <Route path="/product/:id" element={<ProductDetail />} />
 <Route path="/cart" element={<Cart />} />
 <Route path="/checkout" element={<Checkout />} />
+<Route path="/admin" element={<AdminLayout />}>
+        <Route index element={<Dashboard />} />
+        <Route path="orders" element={<Orders />} />
+        <Route path="orders/:id" element={<OrderDetail />} />
 
+      </Route>
         </Routes>
         <Footer />
       </>
+      
     </Router>
    </CartProvider>
+
+   
   );
 }
 
