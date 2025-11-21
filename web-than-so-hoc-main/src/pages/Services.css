@@ -1,67 +1,138 @@
+/* ===============================================
+   SERVICE CARDS (GIAO DIỆN THẺ MỚI - BÓNG ĐẬM & RÕ HƠN)
+=============================================== */
+
 .service-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 25px;
-  margin-top: 40px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); 
+  gap: 30px; 
+  margin-top: 50px;
+  padding: 20px; /* Tăng padding để bóng đổ không bị cắt */
 }
 
 .service-card {
   background: #fff;
-  border-radius: 15px;
-  padding: 25px;
+  border-radius: 24px; 
+  padding: 40px 30px; 
   text-align: center;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  
+  /* --- BÓNG ĐỔ RÕ HƠN Ở ĐÂY --- */
+  /* Layer 1: Bóng nhỏ sát chân để tạo độ nổi */
+  /* Layer 2: Bóng lớn lan rộng để tách nền */
+  box-shadow: 
+    0 2px 10px rgba(0, 0, 0, 0.08), 
+    0 15px 40px rgba(0, 0, 0, 0.12); 
+    
+  /* Thêm viền mỏng để tách biệt rõ ràng với nền trắng */
+  border: 1px solid rgba(0, 0, 0, 0.08); 
+  
   cursor: pointer;
-  transition: transform 0.3s, box-shadow 0.3s;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
   position: relative;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%; 
 }
 
+/* Hiệu ứng Hover: Bóng đậm hơn và pha chút màu tím */
 .service-card:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.15);
+  transform: translateY(-12px); 
+  
+  /* Bóng đổ đậm đà hơn khi hover */
+  box-shadow: 
+    0 15px 30px rgba(0, 0, 0, 0.15),
+    0 30px 60px rgba(122, 0, 255, 0.25); /* Bóng tím tỏa ra */
+    
+  border-color: rgba(122, 0, 255, 0.3); /* Viền chuyển sang màu tím nhạt */
 }
 
+/* Dải màu trang trí trên đầu */
 .service-card::before {
   content: "";
   position: absolute;
-  top: 0;
-  left: 0;
+  top: 0; left: 0;
   width: 100%;
-  height: 5px;
-  background: var(--accent-color);
-  border-radius: 15px 15px 0 0;
+  height: 0; 
+  background: linear-gradient(to right, #7a00ff, #aa00ff); 
+  transition: height 0.3s ease;
+  z-index: 0;
+}
+
+.service-card:hover::before {
+  height: 8px; /* Dày hơn chút cho rõ */
+}
+
+/* Phần hình ảnh/Icon */
+.service-icon {
+  width: 100%;
+  height: 160px; 
+  margin-bottom: 25px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1; 
 }
 
 .service-icon img {
-  width: 100%;
-  border-radius: 10px;
-  margin-bottom: 15px;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  transition: transform 0.5s ease;
+  filter: drop-shadow(0 10px 15px rgba(0,0,0,0.1)); /* Bóng cho ảnh rõ hơn */
 }
 
+.service-card:hover .service-icon img {
+  transform: scale(1.1) rotate(3deg); 
+}
+
+/* Tiêu đề thẻ */
 .service-card h4 {
-  color: #5b03e4;
-  margin-bottom: 10px;
+  color: #1a202c; /* Màu đen đậm hơn để tương phản tốt */
+  font-size: 21px;
+  font-weight: 700;
+  margin-bottom: 15px;
+  transition: color 0.3s;
+  z-index: 1;
 }
 
+.service-card:hover h4 {
+  color: #7a00ff; 
+}
+
+/* Nội dung mô tả */
 .service-card p {
-  color: #555;
+  color: #4a5568; /* Xám đậm hơn chút */
   font-size: 15px;
-  margin-bottom: 20px;
+  line-height: 1.6;
+  margin-bottom: 30px;
+  flex-grow: 1; 
+  z-index: 1;
 }
 
+/* Nút bấm */
 .service-btn {
-  background-color: var(--accent-color);
-  color: #fff;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-weight: bold;
-  transition: 0.3s;
+  padding: 10px 28px;
+  border-radius: 50px;
+  background: transparent; 
+  color: #7a00ff;
+  border: 2px solid #7a00ff; 
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px; 
 }
 
-.service-btn:hover {
-  background-color: #fff;
-  color: var(--accent-color);
-  border: 2px solid var(--accent-color);
+.service-btn:hover, .service-card:hover .service-btn {
+  background: linear-gradient(to right, #7a00ff, #aa00ff);
+  color: #fff;
+  border-color: transparent; 
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(122, 0, 255, 0.4); /* Bóng nút cũng rõ hơn */
 }
