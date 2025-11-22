@@ -1,5 +1,5 @@
 import Header from './components/Header';
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { Routes, Route, useLocation } from "react-router-dom";
 import Lookup from "./components/Lookup";
 import Hero from './components/Hero';
 import Services from './pages/Services';
@@ -18,19 +18,20 @@ import Shop from "./pages/shop/Shop.jsx";
 import ProductDetail from "./pages/shop/ProductDetail.jsx";
 import Cart from "./pages/cart/Cart";
 import { CartProvider } from "./context/CartContext";
-import  Checkout  from "./pages/shop/Checkout.jsx";
+import Checkout from "./pages/shop/Checkout.jsx";
 import AdminLayout from "./admin/AdminLayout";
 import Dashboard from "./admin/pages/Dashboard";
 import Orders from "./admin/pages/Orders";
 import OrderDetail from "./admin/pages/OrderDetail";
 
 function App() {
+  const location = useLocation(); // ⭐ Giờ đã OK vì Router nằm ở index.js
+
   return (
-    // ✅ Header phải nằm bên trong Router
-   <CartProvider>
-     <Router>
+    <CartProvider>
       <>
         <Header />
+
         <Routes>
           <Route
             path="/"
@@ -51,26 +52,30 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/birth-chart" element={<BirthChart />} />
-<Route path="/personal-year" element={<PersonalYear />} />
-<Route path="/report" element={<Report />} />
-<Route path="/shop" element={<Shop />} />
-<Route path="/product/:id" element={<ProductDetail />} />
-<Route path="/cart" element={<Cart />} />
-<Route path="/checkout" element={<Checkout />} />
-<Route path="/admin" element={<AdminLayout />}>
-    <Route index element={<Dashboard />} />
-    <Route path="orders" element={<Orders />} />
-    <Route path="orders/:order_id" element={<OrderDetail />} />
-</Route>
+          <Route path="/personal-year" element={<PersonalYear />} />
+          <Route path="/report" element={<Report />} />
+          <Route path="/shop" element={<Shop />} />
+          <Route path="/product/:id" element={<ProductDetail />} />
+          <Route path="/cart" element={<Cart />} />
+          <Route path="/checkout" element={<Checkout />} />
 
+          {/* Admin */}
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<Dashboard />} />
+            <Route 
+              path="orders" 
+              element={<Orders key={location.key} />} 
+            />
+            <Route 
+              path="orders/:order_id" 
+              element={<OrderDetail />} 
+            />
+          </Route>
         </Routes>
+
         <Footer />
       </>
-      
-    </Router>
-   </CartProvider>
-
-   
+    </CartProvider>
   );
 }
 

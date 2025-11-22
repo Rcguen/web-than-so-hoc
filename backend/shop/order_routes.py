@@ -117,3 +117,29 @@ def admin_order_detail(order_id):
         "order": order,
         "items": items
     })
+# ============================
+#  UPDATE ORDER STATUS
+# ============================
+@order_routes.put("/admin/orders/<int:order_id>/status")
+def update_order_status(order_id):
+    data = request.get_json()
+    new_status = data.get("status")
+
+    if new_status not in ["pending", "processing", "shipping", "completed"]:
+        return jsonify({"error": "Invalid status"}), 400
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute(
+        "UPDATE orders SET order_status = %s WHERE order_id = %s",
+        (new_status, order_id)
+    )
+    conn.commit()
+
+    cur.close()
+    conn.close()
+
+    return jsonify({"message": "updated"})
+
+

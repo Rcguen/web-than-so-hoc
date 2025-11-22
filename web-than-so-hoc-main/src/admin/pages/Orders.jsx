@@ -10,6 +10,7 @@ export default function Orders() {
   const fetchOrders = async () => {
     try {
       const res = await axios.get("http://127.0.0.1:5000/api/admin/orders");
+      console.log("Orders:", res.data.orders); // DEBUG
       setOrders(res.data.orders || []);
       setLoading(false);
     } catch (err) {
@@ -37,7 +38,7 @@ export default function Orders() {
     <div className="orders-page">
       <h1 className="page-title">Đơn Hàng</h1>
 
-      {/* Bộ lọc trạng thái */}
+      {/* Bộ lọc */}
       <div className="filter-bar">
         <select
           value={statusFilter}
@@ -68,9 +69,7 @@ export default function Orders() {
         <tbody>
           {filteredOrders.length === 0 ? (
             <tr>
-              <td colSpan="7" className="no-data">
-                Không có đơn hàng nào.
-              </td>
+              <td colSpan="7" className="no-data">Không có đơn hàng nào.</td>
             </tr>
           ) : (
             filteredOrders.map((order) => (
@@ -79,20 +78,22 @@ export default function Orders() {
                 <td>{order.customer_name}</td>
                 <td>{order.customer_phone}</td>
                 <td>{order.total_price.toLocaleString()} đ</td>
+
+                {/* TRẠNG THÁI — ALWAYS SHOW */}
                 <td>
-                  <span className={`status-badge ${order.order_status}`}>
-                    {order.order_status === "pending" && "Chờ xử lý"}
-                    {order.order_status === "processing" && "Đang xử lý"}
-                    {order.order_status === "shipping" && "Đang giao"}
-                    {order.order_status === "completed" && "Hoàn thành"}
-                  </span>
+                  <span className={`status-badge ${order.order_status || "unknown"}`}>
+  {order.order_status === "pending" && "Chờ xử lý"}
+  {order.order_status === "processing" && "Đang xử lý"}
+  {order.order_status === "shipping" && "Đang giao"}
+  {order.order_status === "completed" && "Hoàn thành"}
+  {!order.order_status && "Chưa có"} 
+</span>
+
                 </td>
+
                 <td>{formatDate(order.created_at)}</td>
                 <td>
-                  <Link
-                    className="view-btn"
-                    to={`/admin/orders/${order.order_id}`}
-                  >
+                  <Link className="view-btn" to={`/admin/orders/${order.order_id}`}>
                     Xem
                   </Link>
                 </td>

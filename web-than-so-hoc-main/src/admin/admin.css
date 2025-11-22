@@ -129,16 +129,69 @@
   background: #5800c9;
 }
 
-/* Status badges */
 .status-badge {
-  padding: 5px 10px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: bold;
-  color: white;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  display: inline-block;
+  min-width: 120px;
+  text-align: center;
 }
 
-.status-badge.pending { background: #ffaa00; }
-.status-badge.processing { background: #007bff; }
-.status-badge.shipping { background: #00b894; }
-.status-badge.completed { background: #6c5ce7; }
+/* Chờ xử lý */
+.status-badge.pending {
+  background: #ff9800;
+}
+
+/* Đang xử lý */
+.status-badge.processing {
+  background: #2196f3;
+}
+
+/* Đang giao */
+.status-badge.shipping {
+  background: #9c27b0;
+}
+
+/* Hoàn thành */
+.status-badge.completed {
+  background: #4caf50;
+}
+
+
+
+.order-status-section {
+  margin: 20px 0;
+}
+
+.order-status-section label {
+  font-weight: bold;
+  color: #555;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.status-select {
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-weight: 600;
+  border: 2px solid #ccc;
+  outline: none;
+  cursor: pointer;
+}
+
+/* Màu theo trạng thái */
+.status-select.pending   { border-color: #ff9800; background: #fff4e0; color:#d27100; }
+.status-select.processing{ border-color: #2196f3; background: #e9f3ff; color:#0b79d0; }
+.status-select.shipping  { border-color: #9c27b0; background: #f7e8ff; color:#7a1c9f; }
+.status-select.completed { border-color: #4caf50; background: #e9fbe9; color:#2e7d32; }
+
+.status-badge.unknown {
+  background: #888;
+  color: white;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+}
