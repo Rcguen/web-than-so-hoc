@@ -23,6 +23,9 @@ import AdminLayout from "./admin/AdminLayout";
 import Dashboard from "./admin/pages/Dashboard";
 import Orders from "./admin/pages/Orders";
 import OrderDetail from "./admin/pages/OrderDetail";
+import Products from "./admin/pages/Products";
+import ProductList from './admin/pages/ProductList.jsx';
+
 
 function App() {
   const location = useLocation(); // ⭐ Giờ đã OK vì Router nằm ở index.js
@@ -70,6 +73,8 @@ function App() {
               path="orders/:order_id" 
               element={<OrderDetail />} 
             />
+            <Route path="products" element={<ProductList />} />
+
           </Route>
         </Routes>
 

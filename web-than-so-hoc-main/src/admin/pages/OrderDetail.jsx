@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
-
+import "./orderDetail.css";
 export default function OrderDetail() {
   const { order_id } = useParams();
   const navigate = useNavigate();

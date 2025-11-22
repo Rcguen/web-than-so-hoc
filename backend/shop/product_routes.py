@@ -144,3 +144,165 @@ def delete_product(product_id):
     conn.close()
     
     return jsonify({"message": "Product deleted!"})
+# =====================================================
+# 1. ADMIN – LẤY DANH SÁCH SẢN PHẨM
+# =====================================================
+@product_routes.get("/admin/products")
+def admin_get_products():
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+
+        cur.execute("""
+            SELECT 
+                p.product_id,
+                p.product_name,
+                p.price,
+                p.image_url,
+                p.description,
+                p.category_id,
+                c.category_name
+            FROM products p
+            LEFT JOIN categories c 
+                ON p.category_id = c.category_id
+            ORDER BY p.product_id DESC
+        """)
+
+        products = cur.fetchall()
+
+        cur.close()
+        conn.close()
+
+        return jsonify({"products": products})
+
+    except Exception as e:
+        print("ERROR:", e)
+        return jsonify({"error": str(e)}), 500
+
+
+
+# =====================================================
+# 2. ADMIN – LẤY CHI TIẾT 1 SẢN PHẨM
+# =====================================================
+@product_routes.get("/admin/products/<int:product_id>")
+def admin_get_product(product_id):
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+
+        cur.execute("SELECT * FROM products WHERE product_id = %s", (product_id,))
+        product = cur.fetchone()
+
+        cur.close()
+        conn.close()
+
+        if not product:
+            return jsonify({"error": "Product not found"}), 404
+
+        return jsonify({"product": product})
+
+    except Exception as e:
+        print("ERROR:", e)
+        return jsonify({"error": str(e)}), 500
+
+
+
+# =====================================================
+# 3. ADMIN – THÊM SẢN PHẨM
+# =====================================================
+@product_routes.post("/admin/products")
+def admin_create_product():
+    data = request.get_json()
+
+    name = data.get("product_name")
+    price = data.get("price")
+    description = data.get("description")
+    image_url = data.get("image_url")
+    category_id = data.get("category_id")
+
+    if not name or not price:
+        return jsonify({"error": "Missing required fields"}), 400
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        cur.execute("""
+            INSERT INTO products(product_name, price, description, image_url, category_id)
+            VALUES (%s, %s, %s, %s, %s)
+        """, (name, price, description, image_url, category_id))
+
+        conn.commit()
+        new_id = cur.lastrowid
+
+        cur.close()
+        conn.close()
+
+        return jsonify({"message": "created", "product_id": new_id})
+
+    except Exception as e:
+        print("ERROR:", e)
+        return jsonify({"error": str(e)}), 500
+
+
+
+# =====================================================
+# 4. ADMIN – CẬP NHẬT SẢN PHẨM
+# =====================================================
+@product_routes.put("/admin/products/<int:product_id>")
+def admin_update_product(product_id):
+    data = request.get_json()
+
+    name = data.get("product_name")
+    price = data.get("price")
+    description = data.get("description")
+    image_url = data.get("image_url")
+    category_id = data.get("category_id")
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        cur.execute("""
+            UPDATE products
+            SET product_name = %s,
+                price = %s,
+                description = %s,
+                image_url = %s,
+                category_id = %s
+            WHERE product_id = %s
+        """, (name, price, description, image_url, category_id, product_id))
+
+        conn.commit()
+
+        cur.close()
+        conn.close()
+
+        return jsonify({"message": "updated"})
+
+    except Exception as e:
+        print("ERROR:", e)
+        return jsonify({"error": str(e)}), 500
+
+
+
+# =====================================================
+# 5. ADMIN – XÓA SẢN PHẨM
+# =====================================================
+@product_routes.delete("/admin/products/<int:product_id>")
+def admin_delete_product(product_id):
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        cur.execute("DELETE FROM products WHERE product_id = %s", (product_id,))
+        conn.commit()
+
+        cur.close()
+        conn.close()
+
+        return jsonify({"message": "deleted"})
+
+    except Exception as e:
+        print("ERROR:", e)
+        return jsonify({"error": str(e)}), 500

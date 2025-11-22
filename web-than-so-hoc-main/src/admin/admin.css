@@ -195,3 +195,75 @@
   border-radius: 6px;
   font-size: 12px;
 }
+
+
+/** Admin Products Page **/
+.top-bar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.top-bar input {
+  padding: 8px 12px;
+  width: 250px;
+  border-radius: 6px;
+  border: 1px solid #bbb;
+}
+
+.top-bar select {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #bbb;
+}
+
+.btn-add {
+  background: #7a00ff;
+  color: white;
+  padding: 8px 14px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.btn-add:hover {
+  background: #5800c9;
+}
+
+.products-table {
+  width: 100%;
+  background: white;
+  border-radius: 12px;
+  border-collapse: collapse;
+  overflow: hidden;
+}
+
+.products-table th {
+  background: #6d00ff;
+  color: white;
+  padding: 14px;
+  text-align: left;
+}
+
+.products-table td {
+  padding: 12px;
+  border-bottom: 1px solid #eee;
+}
+
+.btn-edit {
+  background: #00b894;
+  color: white;
+  padding: 6px 10px;
+  border-radius: 5px;
+  margin-right: 6px;
+  text-decoration: none;
+}
+
+.btn-delete {
+  background: #d63031;
+  color: white;
+  padding: 6px 10px;
+  border-radius: 5px;
+  border: none;
+  cursor: pointer;
+}
