@@ -58,11 +58,11 @@ function App() {
 <Route path="/cart" element={<Cart />} />
 <Route path="/checkout" element={<Checkout />} />
 <Route path="/admin" element={<AdminLayout />}>
-        <Route index element={<Dashboard />} />
-        <Route path="orders" element={<Orders />} />
-        <Route path="orders/:id" element={<OrderDetail />} />
+    <Route index element={<Dashboard />} />
+    <Route path="orders" element={<Orders />} />
+    <Route path="orders/:order_id" element={<OrderDetail />} />
+</Route>
 
-      </Route>
         </Routes>
         <Footer />
       </>

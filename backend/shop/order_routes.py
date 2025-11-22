@@ -83,39 +83,37 @@ def admin_get_orders():
 # 3. API ADMIN – LẤY CHI TIẾT ĐƠN HÀNG
 # ============================
 @order_routes.get("/admin/orders/<int:order_id>")
-def admin_get_order_detail(order_id):
-    try:
-        conn = get_db_connection()
-        cur = conn.cursor(dictionary=True)
+def admin_order_detail(order_id):
+    conn = get_db_connection()
+    cur = conn.cursor(dictionary=True)
 
-        # Lấy thông tin order
-        cur.execute("""
-            SELECT *
-            FROM orders
-            WHERE order_id = %s
-        """, (order_id,))
-        order = cur.fetchone()
+    # Lấy thông tin đơn hàng
+    cur.execute("SELECT * FROM orders WHERE order_id = %s", (order_id,))
+    order = cur.fetchone()
 
-        if not order:
-            return jsonify({"error": "Order not found"}), 404
+    if not order:
+        return jsonify({"error": "Order not found"}), 404
 
-        # Lấy danh sách sản phẩm
-        cur.execute("""
-            SELECT oi.*, p.product_name, p.image
-            FROM order_items oi
-            JOIN products p ON oi.product_id = p.product_id
-            WHERE oi.order_id = %s
-        """, (order_id,))
-        items = cur.fetchall()
+    # Lấy sản phẩm trong đơn (JOIN với bảng products)
+    cur.execute("""
+        SELECT 
+            oi.order_item_id,
+            oi.product_id,
+            oi.quantity,
+            oi.price,
+            p.product_name,
+            p.image_url
+        FROM order_items oi
+        JOIN products p ON oi.product_id = p.product_id
+        WHERE oi.order_id = %s
+    """, (order_id,))
 
-        cur.close()
-        conn.close()
+    items = cur.fetchall()
 
-        return jsonify({
-            "order": order,
-            "items": items
-        })
+    cur.close()
+    conn.close()
 
-    except Exception as e:
-        print("ERROR:", e)
-        return jsonify({"error": str(e)}), 500
+    return jsonify({
+        "order": order,
+        "items": items
+    })
