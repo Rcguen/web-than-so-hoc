@@ -526,6 +526,9 @@ body, #root, .App {
 .cart-icon {
   position: relative;
   display: inline-block;
+  font-size: 22px;
+  cursor: pointer;
+  color: white;
 }
 
 .cart-icon .badge {

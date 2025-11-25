@@ -10,6 +10,11 @@ export default function AdminSidebar() {
         <li><NavLink to="/admin">Dashboard</NavLink></li>
         <li><NavLink to="/admin/orders">Đơn Hàng</NavLink></li>
         <li><NavLink to="/admin/products">Sản Phẩm</NavLink></li>
+        <li>
+  <NavLink to="/admin/categories" className={({ isActive }) => (isActive ? "active" : "")}>
+    📂 Danh mục
+  </NavLink>
+</li>
       </ul>
     </div>
   );

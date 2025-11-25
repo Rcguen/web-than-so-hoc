@@ -209,3 +209,66 @@ def admin_delete_product(product_id):
     conn.close()
 
     return jsonify({"message": "deleted"})
+
+# ============================
+#  GET ALL CATEGORIES (ADMIN)
+# ============================
+@product_routes.get("/admin/categories")
+def get_categories():
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+
+        cur.execute("SELECT category_id, category_name FROM categories ORDER BY category_id DESC")
+        categories = cur.fetchall()
+
+        cur.close()
+        conn.close()
+
+        return jsonify({"categories": categories})
+
+    except Exception as e:
+        print("ERROR:", e)
+        return jsonify({"error": str(e)}), 500
+@product_routes.post("/admin/categories")
+def create_category():
+    data = request.get_json()
+    name = data.get("category_name")
+
+    if not name:
+        return jsonify({"error": "Tên danh mục không được để trống"}), 400
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("INSERT INTO categories(category_name) VALUES (%s)", (name,))
+    conn.commit()
+
+    cur.close()
+    conn.close()
+
+    return jsonify({"message": "created"})
+
+# ============================
+# TOGGLE ENABLE / DISABLE PRODUCT
+# ============================
+@product_routes.put("/admin/products/<int:product_id>/toggle")
+def toggle_product(product_id):
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("SELECT is_active FROM products WHERE product_id=%s", (product_id,))
+    row = cur.fetchone()
+
+    new_status = 0 if row[0] == 1 else 1
+
+    cur.execute(
+        "UPDATE products SET is_active=%s WHERE product_id=%s",
+        (new_status, product_id)
+    )
+    conn.commit()
+
+    cur.close()
+    conn.close()
+    return jsonify({"message": "updated", "status": new_status})
+

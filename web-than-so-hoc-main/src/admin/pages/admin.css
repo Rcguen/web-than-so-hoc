@@ -1,0 +1,607 @@
+/*************************************
+ ========= ADMIN LAYOUT =========
+*************************************/
+.admin-container {
+  display: flex;
+  min-height: 100vh;
+  background: #f5f0ff;
+  font-family: "Inter", sans-serif;
+}
+
+/* ---------- SIDEBAR ---------- */
+.admin-sidebar {
+  width: 240px;
+  background: #5b03e4;
+  color: #fff;
+  padding: 25px 0;
+  box-shadow: 3px 0 10px rgba(0,0,0,0.15);
+}
+
+.admin-logo {
+  text-align: center;
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 35px;
+}
+
+.admin-menu {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.admin-menu li a {
+  display: block;
+  padding: 14px 24px;
+  color: #eee;
+  text-decoration: none;
+  font-size: 15px;
+  font-weight: 500;
+  transition: 0.2s;
+}
+
+.admin-menu li a:hover,
+.admin-menu li a.active {
+  background: #7a24ff;
+  color: white;
+  padding-left: 30px;
+}
+
+/* ---------- MAIN ---------- */
+.admin-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header */
+.admin-header {
+  background: #fff;
+  padding: 18px 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid #eee;
+}
+
+.admin-title {
+  font-size: 22px;
+  font-weight: bold;
+  color: #4b0099;
+}
+
+.admin-user {
+  font-weight: 500;
+  color: #555;
+}
+
+/* Main content */
+.admin-content {
+  padding: 30px;
+}
+
+/*************************************
+ ========== GENERAL UI ==========
+*************************************/
+
+.page-title {
+  font-size: 28px;
+  font-weight: 800;
+  color: #4b0099;
+  margin-bottom: 20px;
+}
+
+/* Top bar actions */
+.top-bar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.top-bar input,
+.top-bar select {
+  padding: 8px 14px;
+  border-radius: 6px;
+  border: 1px solid #bbb;
+}
+
+.top-actions {
+  margin-left: auto;
+  margin-bottom: 15px;
+  justify-content: flex-end;
+  display: flex;
+  gap: 10px;
+}
+
+.btn-add {
+  background: #7d00ff;
+  color: #fff;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.btn-add:hover {
+  background: #5b00cc;
+}
+
+.product-thumb {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.status-btn {
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.status-btn.active {
+  background: #22c55e;
+  color: white;
+}
+
+.status-btn.inactive {
+  background: #ef4444;
+  color: white;
+}
+
+
+/*************************************
+ ========== ORDERS LIST ==========
+*************************************/
+.orders-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+
+.orders-table th {
+  background: #6d00ff;
+  color: #fff;
+  padding: 14px;
+  text-align: left;
+  font-size: 15px;
+}
+
+.orders-table td {
+  padding: 13px;
+  border-bottom: 1px solid #eee;
+  font-size: 14px;
+}
+
+.no-data {
+  text-align: center;
+  padding: 25px;
+  color: #777;
+}
+
+.view-btn {
+  background: #7a00ff;
+  color: #fff;
+  padding: 6px 14px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-size: 13px;
+}
+
+.view-btn:hover {
+  background: #5800c9;
+}
+
+/* STATUS BADGES */
+.status-badge {
+  padding: 7px 16px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 700;
+  color: white;
+  text-align: center;
+}
+
+/* Trạng thái */
+.status-badge.pending { background: #ffa726; }
+.status-badge.processing { background: #42a5f5; }
+.status-badge.shipping { background: #ab47bc; }
+.status-badge.completed { background: #66bb6a; }
+.status-badge.unknown { background: #888; }
+
+/*************************************
+ ========== ORDER DETAIL ==========
+*************************************/
+.order-status-section {
+  margin: 25px 0;
+}
+
+.order-status-section label {
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 6px;
+  display: block;
+}
+
+.status-select {
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 2px solid #ccc;
+  font-weight: 600;
+  width: 220px;
+}
+
+.status-select.pending   { border-color:#ffa726; background:#fff5e6; color:#b46900; }
+.status-select.processing{ border-color:#42a5f5; background:#e6f2ff; color:#0f6abf; }
+.status-select.shipping  { border-color:#ab47bc; background:#f7e3ff; color:#7d2a91; }
+.status-select.completed { border-color:#66bb6a; background:#e6f9e7; color:#2d7d33; }
+
+/*************************************
+ ========== PRODUCTS LIST ==========
+*************************************/
+.products-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+
+.products-table th {
+  background: #6d00ff;
+  color: #fff;
+  padding: 14px;
+}
+
+.products-table td {
+  padding: 12px;
+  border-bottom: 1px solid #eee;
+}
+
+.btn-edit {
+  background: #00b894;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-right: 6px;
+}
+
+.btn-delete {
+  background: #e53935;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: none;
+}
+
+/*************************************
+ ========== PRODUCT DETAIL FORM ==========
+*************************************/
+.admin-detail-page {
+  max-width: 900px;
+  background: white;
+  margin: auto;
+  padding: 30px;
+  border-radius: 14px;
+  box-shadow: 0 4px 20px #0001;
+}
+
+.product-form label {
+  font-weight: 600;
+  margin-top: 15px;
+  display: block;
+}
+
+.product-form input,
+.product-form textarea,
+.product-form select {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  margin-top: 6px;
+  font-size: 15px;
+  background: #faf9ff;
+}
+
+.form-actions {
+  margin-top: 30px;
+  display: flex;
+  gap: 14px;
+}
+
+.btn-save {
+  background: #6d00ff;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 10px;
+}
+
+.btn-back {
+  background: #ddd;
+  padding: 10px 20px;
+  border-radius: 10px;
+}
+
+.btn-delete-large {
+  background: #e53935;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 10px;
+}
+
+/* ==== Layout chung ==== */
+.admin-page {
+  padding: 25px 30px 40px;
+}
+
+.admin-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.admin-page-title {
+  font-size: 26px;
+  font-weight: 700;
+  color: #5c00ff;
+}
+
+/* Card trắng chứa bảng */
+.admin-card {
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+  padding: 10px 0;
+}
+
+/* Nút chính */
+.btn-primary {
+  background: linear-gradient(90deg, #7a00ff, #b300ff);
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  padding: 9px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(122, 0, 255, 0.4);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px rgba(122, 0, 255, 0.45);
+}
+
+/* ==== Bảng ==== */
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.admin-table thead th {
+  background: #7a00ff;
+  color: #fff;
+  padding: 12px 20px;
+  text-align: left;
+  font-weight: 600;
+}
+
+.admin-table tbody td {
+  padding: 11px 20px;
+  border-bottom: 1px solid #f0e6ff;
+}
+
+.admin-table tbody tr:nth-child(even) {
+  background: #faf7ff;
+}
+
+.admin-table tbody tr:hover {
+  background: #f3ebff;
+}
+
+/* Ô không có dữ liệu */
+.admin-no-data {
+  text-align: center;
+  padding: 30px 0;
+  color: #777;
+}
+
+/* Tên sản phẩm dài */
+.admin-prod-name {
+  max-width: 320px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ==== Ảnh sản phẩm ==== */
+.admin-prod-thumb {
+  width: 60px;
+  height: 60px;
+  border-radius: 10px;
+  object-fit: cover;
+  border: 1px solid #e2d5ff;
+  background: #f8f5ff;
+}
+
+.admin-thumb-placeholder {
+  width: 60px;
+  height: 60px;
+  border-radius: 10px;
+  background: #f4f0ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: #999;
+}
+
+/* ==== Badge trạng thái ==== */
+.badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.badge-active {
+  background: rgba(46, 204, 113, 0.15);
+  color: #1e9e55;
+}
+
+.badge-hidden {
+  background: rgba(149, 165, 166, 0.2);
+  color: #576574;
+}
+
+/* ==== Nút nhỏ trong bảng ==== */
+.btn-small {
+  border: none;
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-right: 6px;
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+
+.btn-small:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.btn-edit {
+  background: #00b894;
+  color: #fff;
+}
+
+.btn-toggle {
+  background: #ffeaa7;
+  color: #8e5c00;
+}
+
+/* Loading text */
+.admin-loading {
+  padding: 40px 30px;
+  font-size: 16px;
+}
+
+/* Layout */
+.admin-page {
+  padding: 30px;
+}
+
+.admin-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+}
+
+.page-title {
+  font-size: 30px;
+  font-weight: 700;
+  color: #5a00ff;
+}
+
+/* Buttons */
+.btn-primary {
+  background: #7b2cff;
+  color: white;
+  padding: 10px 18px;
+  border-radius: 10px;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.btn-edit {
+  background: #7b2cff;
+  color: white;
+  padding: 6px 14px;
+  border-radius: 8px;
+  text-decoration: none;
+  margin-right: 5px;
+}
+
+.btn-hide {
+  background: #ff3b3b;
+  color: white;
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: none;
+}
+
+.btn-show {
+  background: #00c853;
+  color: white;
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: none;
+}
+
+/* Table */
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 0 12px rgba(0,0,0,0.06);
+}
+
+.admin-table thead tr {
+  background: #7b2cff;
+  color: white;
+}
+
+.admin-table th,
+.admin-table td {
+  padding: 14px 18px;
+  text-align: left;
+  font-size: 15px;
+}
+
+/* Product Image */
+.product-thumb {
+  width: 55px;
+  height: 55px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 2px solid #eee;
+}
+
+/* Status badge */
+.status-badge {
+  padding: 5px 12px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.status-badge.active {
+  background: #d9ffe6;
+  color: #00a248;
+}
+
+.status-badge.inactive {
+  background: #ffe6e6;
+  color: #d10000;
+}
+
+/* Fix action column */
+.action-col {
+  display: flex;
+  gap: 8px;
+}

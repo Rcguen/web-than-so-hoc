@@ -19,13 +19,15 @@ import ProductDetail from "./pages/shop/ProductDetail.jsx";
 import Cart from "./pages/cart/Cart";
 import { CartProvider } from "./context/CartContext";
 import Checkout from "./pages/shop/Checkout.jsx";
-import AdminLayout from "./admin/AdminLayout";
+import AdminLayout from "./admin/pages/AdminLayout.jsx";
 import Dashboard from "./admin/pages/Dashboard";
 import Orders from "./admin/pages/Orders";
 import OrderDetail from "./admin/pages/OrderDetail";
 import AdminProducts from "./admin/pages/AdminProducts";
 import ProductList from './admin/pages/ProductList.jsx';
-
+import AdminProductDetail from './admin/pages/AdminProductDetail.jsx';
+import AdminCategories from './admin/pages/AdminCategory.jsx';
+import AdminCategoryDetail from "./admin/pages/AdminCategoryDetail";
 
 function App() {
   const location = useLocation(); // ⭐ Giờ đã OK vì Router nằm ở index.js
@@ -64,18 +66,22 @@ function App() {
 
           {/* Admin */}
           <Route path="/admin" element={<AdminLayout />}>
-            <Route index element={<Dashboard />} />
-            <Route 
-              path="orders" 
-              element={<Orders key={location.key} />} 
-            />
-            <Route 
-              path="orders/:order_id" 
-              element={<OrderDetail />} 
-            />
-            <Route path="products" element={<ProductList />} />
+    <Route index element={<Dashboard />} />
 
-          </Route>
+    {/* Orders */}
+    <Route path="orders" element={<Orders key={location.key} />} />
+    <Route path="orders/:order_id" element={<OrderDetail />} />
+
+    {/* Products */}
+    <Route path="products" element={<AdminProducts />} />
+    <Route path="products/:id" element={<AdminProductDetail />} />
+
+    {/* Categories */}
+    <Route path="categories" element={<AdminCategories />} />
+    <Route path="categories/:id" element={<AdminCategoryDetail />} />
+    <Route path="categories/create" element={<AdminCategoryDetail />} />
+</Route>
+
         </Routes>
 
         <Footer />

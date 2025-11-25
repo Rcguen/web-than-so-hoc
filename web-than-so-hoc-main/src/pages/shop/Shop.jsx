@@ -16,7 +16,7 @@ function Shop() {
   const loadCategories = async () => {
     const res = await fetch("http://127.0.0.1:5000/api/categories");
     const data = await res.json();
-    setCategories(data);
+    setCategories(data.categories || data); 
   };
 
   // Load products (all or by category)
@@ -29,7 +29,9 @@ function Shop() {
 
     const res = await fetch(url);
     const data = await res.json();
-    setProducts(data);
+
+    // ⚠️ Backend trả về {products: [...]}, không phải array
+    setProducts(data.products || []);
   };
 
   return (
@@ -37,7 +39,10 @@ function Shop() {
       <h1 style={{ textAlign: "center", color: "#5b03e4" }}>🛍 Cửa Hàng</h1>
 
       {/* CATEGORY FILTER */}
-      <div className="category-filter" style={{ display: "flex", gap: "15px", margin: "30px 0" }}>
+      <div
+        className="category-filter"
+        style={{ display: "flex", gap: "15px", margin: "30px 0" }}
+      >
         <button
           className={`category-btn ${activeCategory === "all" ? "active" : ""}`}
           onClick={() => {
@@ -59,13 +64,13 @@ function Shop() {
               loadProducts(cat.category_id);
             }}
           >
-            {cat.category_name}   {/* FIXED */}
+            {cat.category_name}
           </button>
         ))}
       </div>
 
       {/* PRODUCT GRID */}
-      <div 
+      <div
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))",
@@ -86,8 +91,8 @@ function Shop() {
             }}
           >
             <img
-              src={`http://127.0.0.1:5000${prod.image_url}`}  // FIXED
-              alt={prod.product_name}                         // FIXED
+              src={`http://127.0.0.1:5000${prod.image_url}`}
+              alt={prod.product_name}
               style={{
                 width: "100%",
                 height: "200px",
@@ -96,7 +101,8 @@ function Shop() {
               }}
             />
 
-            <h3 style={{ marginTop: "10px" }}>{prod.product_name}</h3> {/* FIXED */}
+            <h3 style={{ marginTop: "10px" }}>{prod.product_name}</h3>
+
             <p style={{ color: "#5b03e4", fontWeight: "bold" }}>
               {prod.price.toLocaleString()} đ
             </p>
