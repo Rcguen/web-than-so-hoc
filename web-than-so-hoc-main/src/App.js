@@ -23,7 +23,7 @@ import AdminLayout from "./admin/AdminLayout";
 import Dashboard from "./admin/pages/Dashboard";
 import Orders from "./admin/pages/Orders";
 import OrderDetail from "./admin/pages/OrderDetail";
-import Products from "./admin/pages/Products";
+import AdminProducts from "./admin/pages/AdminProducts";
 import ProductList from './admin/pages/ProductList.jsx';
 
 

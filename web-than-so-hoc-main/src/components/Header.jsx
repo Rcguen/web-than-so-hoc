@@ -1,14 +1,35 @@
-import React, { useState } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { NavLink, useNavigate, Link } from "react-router-dom";
+import { useCart } from "../context/CartContext";
 
 const HEADER_HEIGHT = "80px";
 
 function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [subOpen, setSubOpen] = useState(false);
+  const [cartCount, setCartCount] = useState(0);
+  const { cartCount: contextCartCount } = useCart();
   const navigate = useNavigate();
 
   const user = JSON.parse(localStorage.getItem("user") || "null");
+
+  // 🔥 CẬP NHẬT GIỎ HÀNG REALTIME
+  const updateCartCount = () => {
+    const cart = JSON.parse(localStorage.getItem("cart") || "[]");
+    const total = cart.reduce((sum, i) => sum + Number(i.qty), 0);
+    setCartCount(total);
+  };
+
+  useEffect(() => {
+    updateCartCount();
+
+    // Lắng nghe event mỗi khi thêm/xóa sản phẩm
+    window.addEventListener("cartUpdated", updateCartCount);
+
+    return () => {
+      window.removeEventListener("cartUpdated", updateCartCount);
+    };
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem("user");
@@ -18,7 +39,6 @@ function Header() {
 
   return (
     <>
-      {/* ---------------- CSS NHÓM EM GỬI ---------------- */}
       <style>{`
         * { box-sizing: border-box; }
 
@@ -210,13 +230,13 @@ function Header() {
         }
       `}</style>
 
-      {/* --------------- OVERLAY --------------- */}
+      {/* Overlay */}
       <div
         className={`menu-overlay ${menuOpen ? "show" : ""}`}
         onClick={() => setMenuOpen(false)}
       ></div>
 
-      {/* --------------- HEADER DESKTOP --------------- */}
+      {/* HEADER */}
       <header className="header-area">
         <div className="container">
 
@@ -235,7 +255,28 @@ function Header() {
               </div>
             )}
 
-            {/* NÚT 3 SỌC (desktop + mobile) */}
+            {/* 🛒 GIỎ HÀNG + BADGE */}
+            <Link to="/cart" className="cart-icon" style={{ position: "relative" }}>
+              <span className="icon">🛒</span>
+              {cartCount > 0 && (
+                <span
+                  style={{
+                    position: "absolute",
+                    top: "-5px",
+                    right: "-10px",
+                    background: "red",
+                    color: "white",
+                    fontSize: "12px",
+                    padding: "2px 6px",
+                    borderRadius: "50%",
+                  }} className="badge"
+                >
+                  {cartCount}
+                </span>
+              )}
+            </Link>
+
+            {/* NÚT MENU */}
             <div
               className={`menu-trigger ${menuOpen ? "active" : ""}`}
               onClick={() => setMenuOpen(!menuOpen)}
@@ -243,33 +284,24 @@ function Header() {
               <span></span><span></span><span></span>
             </div>
           </div>
-
         </div>
       </header>
 
-      {/* --------------- POPUP MENU --------------- */}
+      {/* MENU POPUP */}
       <div className={`popup-menu ${menuOpen ? "show" : ""}`}>
         <ul className="popup-nav">
 
-          {/* TRANG CHỦ */}
           <li>
             <NavLink to="/" onClick={() => setMenuOpen(false)}>
-              <div className="icon-dot">🏠</div>
-              Trang Chủ
+              <div className="icon-dot">🏠</div>Trang Chủ
             </NavLink>
           </li>
 
-          {/* THẦN SỐ HỌC DROPDOWN */}
           <li>
-            <div
-              className="menu-item-span"
-              onClick={() => setSubOpen(!subOpen)}
-            >
+            <div className="menu-item-span" onClick={() => setSubOpen(!subOpen)}>
               <div className="icon-dot">🔮</div>
               Thần Số Học
-              <span style={{ marginLeft: "auto" }}>
-                {subOpen ? "▲" : "▼"}
-              </span>
+              <span style={{ marginLeft: "auto" }}>{subOpen ? "▲" : "▼"}</span>
             </div>
 
             <div className={`sub-menu ${subOpen ? "show" : ""}`}>
@@ -280,33 +312,10 @@ function Header() {
             </div>
           </li>
 
-          {/* CÁC MỤC KHÁC */}
-          <li>
-            <NavLink to="/admin" onClick={() => setMenuOpen(false)}>
-              <div className="icon-dot">🎉</div>
-              Admin Panel
-            </NavLink>
-          </li>
-          <li>
-            <NavLink to="/shop" onClick={() => setMenuOpen(false)}>
-              <div className="icon-dot">🛒</div>
-              Cửa Hàng
-            </NavLink>
-          </li>
-
-          <li>
-            <NavLink to="/cart" onClick={() => setMenuOpen(false)}>
-              <div className="icon-dot">🛍️</div>
-              Giỏ Hàng
-            </NavLink>
-          </li>
-
-          <li>
-            <NavLink to="/contact" onClick={() => setMenuOpen(false)}>
-              <div className="icon-dot">📞</div>
-              Liên Hệ
-            </NavLink>
-          </li>
+          <li><NavLink to="/admin" onClick={() => setMenuOpen(false)}><div className="icon-dot">🎉</div>Admin Panel</NavLink></li>
+          <li><NavLink to="/shop" onClick={() => setMenuOpen(false)}><div className="icon-dot">🛒</div>Cửa Hàng</NavLink></li>
+          <li><NavLink to="/cart" onClick={() => setMenuOpen(false)}><div className="icon-dot">🛍️</div>Giỏ Hàng</NavLink></li>
+          <li><NavLink to="/contact" onClick={() => setMenuOpen(false)}><div className="icon-dot">📞</div>Liên Hệ</NavLink></li>
 
         </ul>
       </div>

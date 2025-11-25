@@ -523,3 +523,19 @@ body, #root, .App {
   margin-right: 0 !important;
 }
 
+.cart-icon {
+  position: relative;
+  display: inline-block;
+}
+
+.cart-icon .badge {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  background: red;
+  color: #fff;
+  padding: 3px 6px;
+  font-size: 12px;
+  border-radius: 50%;
+}
+

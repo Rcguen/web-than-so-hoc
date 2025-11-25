@@ -11,33 +11,46 @@ order_routes = Blueprint("order_routes", __name__)
 def create_order():
     data = request.get_json()
 
-    user_id = data.get("user_id")
-    customer_name = data.get("customer_name")
-    customer_phone = data.get("customer_phone")
-    customer_address = data.get("customer_address")
-    note = data.get("note")
-    items = data.get("items")
-    total = data.get("total")
+    customer = data.get("customer")
+    cart = data.get("cart")
+
+    if not customer or not cart:
+        return jsonify({"error": "Dữ liệu không hợp lệ"}), 400
+
+    customer_name = customer.get("fullname")
+    customer_phone = customer.get("phone")
+    customer_address = customer.get("address")
+    note = customer.get("notes", "")
+
+    # Tính tổng tiền
+    total_price = sum(
+        float(item.get("price", 0)) * int(item.get("qty", 1)) for item in cart
+    )
 
     try:
         conn = get_db_connection()
         cur = conn.cursor()
 
-        # Insert order
+        # 1) Insert vào orders
         cur.execute("""
             INSERT INTO orders (user_id, total_price, order_status, created_at,
                                 customer_name, customer_phone, customer_address, note)
-            VALUES (%s, %s, 'pending', NOW(), %s, %s, %s, %s)
-        """, (user_id, total, customer_name, customer_phone, customer_address, note))
+            VALUES (NULL, %s, 'pending', NOW(), %s, %s, %s, %s)
+        """, (total_price, customer_name, customer_phone, customer_address, note))
 
         order_id = cur.lastrowid
 
-        # Insert order items
-        for item in items:
+        # 2) Insert chi tiết sản phẩm
+        for item in cart:
             cur.execute("""
                 INSERT INTO order_items(order_id, product_id, quantity, price)
                 VALUES (%s, %s, %s, %s)
-            """, (order_id, item["product_id"], item["qty"], item["price"]))
+            """, (
+                order_id,
+                item["product_id"],
+                item["qty"],
+                float(item["price"])
+            ))
 
         conn.commit()
         cur.close()

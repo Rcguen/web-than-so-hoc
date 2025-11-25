@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import "./Page.css";
+import { useCart } from "../../context/CartContext";
+
 
 function ProductDetail() {
   const { id } = useParams();
   const [product, setProduct] = useState(null);
+  const { addToCart } = useCart();
 
   useEffect(() => {
     loadProduct();
@@ -30,6 +33,7 @@ function ProductDetail() {
           />
         </div>
 
+        
         {/* RIGHT: INFO */}
         <div className="product-detail-info">
           <h2>{product.product_name}</h2>
@@ -44,31 +48,22 @@ function ProductDetail() {
 
           <p className="description">{product.description}</p>
 
-          <button
+         <button
   className="btn-add-cart"
   onClick={() => {
-    let cart = JSON.parse(localStorage.getItem("cart") || "[]");
+    addToCart({
+      product_id: product.product_id,
+      product_name: product.product_name,
+      price: Number(product.price),
+      image_url: product.image_url
+    });
 
-    const existed = cart.find((item) => item.product_id === product.product_id);
-
-    const priceNumber = Number(product.price); // ÉP KIỂU TẠI ĐÂY
-
-    if (existed) {
-      existed.qty += 1;
-    } else {
-      cart.push({
-        ...product,
-        price: priceNumber,  // GHI ĐÈ GIÁ THÀNH SỐ
-        qty: 1
-      });
-    }
-
-    localStorage.setItem("cart", JSON.stringify(cart));
     alert("Đã thêm vào giỏ hàng!");
   }}
 >
   Thêm vào giỏ
 </button>
+
 
 
         </div>
