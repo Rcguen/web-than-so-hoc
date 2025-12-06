@@ -31,6 +31,15 @@ import AdminCategoryDetail from "./admin/pages/AdminCategoryDetail";
 
 function App() {
   const location = useLocation(); // ⭐ Giờ đã OK vì Router nằm ở index.js
+  const RequireAdmin = ({ children }) => {
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+
+  if (!user || user.role !== "Admin") {
+    return <h1 style={{padding: 40}}>⛔ Bạn không có quyền truy cập trang Admin.</h1>;
+  }
+
+  return children;
+};
 
   return (
     <CartProvider>
@@ -66,6 +75,7 @@ function App() {
 
           {/* Admin */}
           <Route path="/admin" element={<AdminLayout />}>
+
     <Route index element={<Dashboard />} />
 
     {/* Orders */}
@@ -74,13 +84,16 @@ function App() {
 
     {/* Products */}
     <Route path="products" element={<AdminProducts />} />
+    <Route path="products/add" element={<AdminProductDetail />} />   {/* NEW */}
     <Route path="products/:id" element={<AdminProductDetail />} />
 
     {/* Categories */}
     <Route path="categories" element={<AdminCategories />} />
     <Route path="categories/:id" element={<AdminCategoryDetail />} />
     <Route path="categories/create" element={<AdminCategoryDetail />} />
+
 </Route>
+
 
         </Routes>
 

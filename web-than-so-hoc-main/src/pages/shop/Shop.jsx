@@ -9,40 +9,47 @@ function Shop() {
 
   useEffect(() => {
     loadCategories();
-    loadProducts(); // load all products
+    loadProducts(); // load tất cả sản phẩm khi mở trang
   }, []);
 
-  // Load categories
+  // ========= LOAD CATEGORIES =========
   const loadCategories = async () => {
-    const res = await fetch("http://127.0.0.1:5000/api/categories");
-    const data = await res.json();
-    setCategories(data.categories || data); 
+    try {
+      const res = await fetch("http://127.0.0.1:5000/api/categories");
+      const data = await res.json();
+
+      if (Array.isArray(data)) setCategories(data);
+      else setCategories([]);
+    } catch (err) {
+      console.error("Load categories failed:", err);
+    }
   };
 
-  // Load products (all or by category)
+  // ========= LOAD PRODUCTS =========
   const loadProducts = async (category_id = "all") => {
-    let url = "http://127.0.0.1:5000/api/products";
+    try {
+      let url =
+        category_id === "all"
+          ? "http://127.0.0.1:5000/api/products"
+          : `http://127.0.0.1:5000/api/products/category/${category_id}`;
 
-    if (category_id !== "all") {
-      url = `http://127.0.0.1:5000/api/products/category/${category_id}`;
+      const res = await fetch(url);
+      const data = await res.json();
+
+      if (Array.isArray(data)) setProducts(data);
+      else setProducts([]); // tránh lỗi .map is not a function
+    } catch (err) {
+      console.error("Load products failed:", err);
+      setProducts([]);
     }
-
-    const res = await fetch(url);
-    const data = await res.json();
-
-    // ⚠️ Backend trả về {products: [...]}, không phải array
-    setProducts(data.products || []);
   };
 
   return (
-    <div className="shop-container" style={{ padding: "80px 40px" }}>
+    <div style={{ padding: "80px 40px" }}>
       <h1 style={{ textAlign: "center", color: "#5b03e4" }}>🛍 Cửa Hàng</h1>
 
       {/* CATEGORY FILTER */}
-      <div
-        className="category-filter"
-        style={{ display: "flex", gap: "15px", margin: "30px 0" }}
-      >
+      <div style={{ display: "flex", gap: "15px", margin: "30px 0" }}>
         <button
           className={`category-btn ${activeCategory === "all" ? "active" : ""}`}
           onClick={() => {
@@ -77,6 +84,10 @@ function Shop() {
           gap: "25px",
         }}
       >
+        {products.length === 0 && (
+          <p style={{ textAlign: "center", width: "100%" }}>Không có sản phẩm nào</p>
+        )}
+
         {products.map((prod) => (
           <div
             key={prod.product_id}
@@ -104,7 +115,7 @@ function Shop() {
             <h3 style={{ marginTop: "10px" }}>{prod.product_name}</h3>
 
             <p style={{ color: "#5b03e4", fontWeight: "bold" }}>
-              {prod.price.toLocaleString()} đ
+              {Number(prod.price).toLocaleString()} đ
             </p>
 
             <Link to={`/product/${prod.product_id}`}>

@@ -1,202 +1,200 @@
 from flask import Blueprint, request, jsonify
 from db import get_db_connection
+import os
+from werkzeug.utils import secure_filename
 
 product_routes = Blueprint("product_routes", __name__)
+UPLOAD_FOLDER = "uploads/products"
 
-# =====================================================
-# PUBLIC API — LẤY TẤT CẢ SẢN PHẨM
-# =====================================================
+
+# ====================================================
+# PUBLIC: LẤY TẤT CẢ SẢN PHẨM HIỂN THỊ TRÊN SHOP
+# ====================================================
 @product_routes.get("/products")
-def get_products():
+def get_public_products():
     conn = get_db_connection()
     cur = conn.cursor(dictionary=True)
 
     cur.execute("""
-        SELECT 
-            p.product_id,
-            p.product_name,
-            p.price,
-            p.description,
-            p.image_url,
-            c.category_name
-        FROM products p
-        LEFT JOIN categories c ON p.category_id = c.category_id
-        ORDER BY p.product_id DESC
+        SELECT product_id, product_name, price, image_url, category_id, quantity, is_active
+        FROM products
+        WHERE is_active = 1
+        ORDER BY product_id DESC
     """)
 
-    rows = cur.fetchall()
+    products = cur.fetchall()
+
     cur.close()
     conn.close()
 
-    return jsonify({"products": rows})
+    return jsonify(products)
 
 
-# =====================================================
-# PUBLIC API — SẢN PHẨM THEO DANH MỤC
-# =====================================================
+# ====================================================
+# PUBLIC: LẤY SẢN PHẨM THEO DANH MỤC
+# ====================================================
 @product_routes.get("/products/category/<int:category_id>")
-def get_products_by_category(category_id):
+def get_public_products_by_category(category_id):
     conn = get_db_connection()
     cur = conn.cursor(dictionary=True)
 
     cur.execute("""
-        SELECT product_id, product_name, price, description, image_url
+        SELECT product_id, product_name, price, image_url, category_id, quantity, is_active
         FROM products
-        WHERE category_id = %s
+        WHERE category_id = %s AND is_active = 1
+        ORDER BY product_id DESC
     """, (category_id,))
 
-    rows = cur.fetchall()
+    products = cur.fetchall()
+
     cur.close()
     conn.close()
 
-    return jsonify({"products": rows})
+    return jsonify(products)
 
 
-# =====================================================
-# PUBLIC API — LẤY CHI TIẾT 1 SẢN PHẨM
-# =====================================================
+# ====================================================
+# PUBLIC: LẤY 1 SẢN PHẨM
+# ====================================================
 @product_routes.get("/products/<int:product_id>")
-def get_product(product_id):
+def get_single_public_product(product_id):
     conn = get_db_connection()
     cur = conn.cursor(dictionary=True)
 
     cur.execute("""
-        SELECT 
-            p.product_id,
-            p.product_name,
-            p.price,
-            p.description,
-            p.image_url,
-            c.category_name
-        FROM products p
-        LEFT JOIN categories c ON p.category_id = c.category_id
-        WHERE p.product_id = %s
+        SELECT product_id, product_name, price, image_url, category_id, quantity, is_active, description
+        FROM products
+        WHERE product_id = %s AND is_active = 1
         LIMIT 1
     """, (product_id,))
 
-    row = cur.fetchone()
+    product = cur.fetchone()
+
     cur.close()
     conn.close()
 
-    return jsonify({"product": row})
+    return jsonify(product)
 
 
-# =====================================================
-# ADMIN — LIST PRODUCTS
-# =====================================================
+# ====================================================
+# ADMIN: LẤY TẤT CẢ SẢN PHẨM
+# ====================================================
 @product_routes.get("/admin/products")
 def admin_get_products():
     conn = get_db_connection()
     cur = conn.cursor(dictionary=True)
 
     cur.execute("""
-        SELECT 
-            p.product_id,
-            p.product_name,
-            p.price,
-            p.image_url,
-            p.description,
-            p.category_id,
-            c.category_name
+        SELECT p.*, c.category_name
         FROM products p
         LEFT JOIN categories c ON p.category_id = c.category_id
         ORDER BY p.product_id DESC
     """)
 
-    rows = cur.fetchall()
+    data = cur.fetchall()
     cur.close()
     conn.close()
 
-    return jsonify({"products": rows})
+    return jsonify(data)
 
 
-# =====================================================
-# ADMIN — GET 1 PRODUCT
-# =====================================================
+# ====================================================
+# ADMIN: LẤY 1 SẢN PHẨM
+# ====================================================
 @product_routes.get("/admin/products/<int:product_id>")
-def admin_get_product(product_id):
+def admin_get_single_product(product_id):
     conn = get_db_connection()
     cur = conn.cursor(dictionary=True)
 
     cur.execute("SELECT * FROM products WHERE product_id = %s", (product_id,))
-    row = cur.fetchone()
+    product = cur.fetchone()
 
     cur.close()
     conn.close()
 
-    if not row:
-        return jsonify({"error": "Product not found"}), 404
-
-    return jsonify({"product": row})
+    return jsonify(product)
 
 
-# =====================================================
-# ADMIN — CREATE PRODUCT
-# =====================================================
+# ====================================================
+# ADMIN: TẠO SẢN PHẨM
+# ====================================================
 @product_routes.post("/admin/products")
-def admin_create_product():
-    data = request.json
+def admin_add_product():
+    data = request.form
+    image = request.files.get("image")
 
-    name = data.get("product_name")
-    price = data.get("price")
-    description = data.get("description")
-    image_url = data.get("image_url")
-    category_id = data.get("category_id")
-
-    conn = get_db_connection()
-    cur = conn.cursor()
-
-    cur.execute("""
-        INSERT INTO products (product_name, price, description, image_url, category_id)
-        VALUES (%s, %s, %s, %s, %s)
-    """, (name, price, description, image_url, category_id))
-
-    conn.commit()
-    new_id = cur.lastrowid
-
-    cur.close()
-    conn.close()
-
-    return jsonify({"message": "created", "product_id": new_id})
-
-
-# =====================================================
-# ADMIN — UPDATE PRODUCT
-# =====================================================
-@product_routes.put("/admin/products/<int:product_id>")
-def admin_update_product(product_id):
-    data = request.json
+    image_url = None
+    if image:
+        filename = secure_filename(image.filename)
+        path = os.path.join(UPLOAD_FOLDER, filename)
+        image.save(path)
+        image_url = f"/{path}"
 
     conn = get_db_connection()
     cur = conn.cursor()
 
     cur.execute("""
-        UPDATE products
-        SET product_name = %s,
-            price = %s,
-            description = %s,
-            image_url = %s,
-            category_id = %s
-        WHERE product_id = %s
+        INSERT INTO products (product_name, price, description, category_id, image_url, quantity, is_active)
+        VALUES (%s, %s, %s, %s, %s, %s, 1)
     """, (
-        data["product_name"],
-        data["price"],
-        data["description"],
-        data["image_url"],
-        data["category_id"],
-        product_id
+        data["product_name"], data["price"], data.get("description"),
+        data.get("category_id"), image_url, data.get("quantity")
     ))
 
     conn.commit()
     cur.close()
     conn.close()
 
-    return jsonify({"message": "updated"})
+    return jsonify({"message": "Product added"})
 
 
-# =====================================================
-# ADMIN — DELETE PRODUCT
-# =====================================================
+# ====================================================
+# ADMIN: UPDATE SẢN PHẨM
+# ====================================================
+@product_routes.put("/admin/products/<int:product_id>")
+def admin_update_product(product_id):
+    data = request.form
+    image = request.files.get("image")
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    if image:
+        filename = secure_filename(image.filename)
+        path = os.path.join(UPLOAD_FOLDER, filename)
+        image.save(path)
+        image_url = f"/{path}"
+
+        cur.execute("""
+            UPDATE products
+            SET product_name=%s, price=%s, description=%s, category_id=%s,
+                image_url=%s, quantity=%s
+            WHERE product_id=%s
+        """, (
+            data["product_name"], data["price"], data.get("description"),
+            data.get("category_id"), image_url, data.get("quantity"), product_id
+        ))
+    else:
+        cur.execute("""
+            UPDATE products
+            SET product_name=%s, price=%s, description=%s, category_id=%s,
+                quantity=%s
+            WHERE product_id=%s
+        """, (
+            data["product_name"], data["price"], data.get("description"),
+            data.get("category_id"), data.get("quantity"), product_id
+        ))
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    return jsonify({"message": "Product updated"})
+
+
+# ====================================================
+# ADMIN: XÓA
+# ====================================================
 @product_routes.delete("/admin/products/<int:product_id>")
 def admin_delete_product(product_id):
     conn = get_db_connection()
@@ -208,67 +206,45 @@ def admin_delete_product(product_id):
     cur.close()
     conn.close()
 
-    return jsonify({"message": "deleted"})
+    return jsonify({"message": "Product deleted"})
 
-# ============================
-#  GET ALL CATEGORIES (ADMIN)
-# ============================
-@product_routes.get("/admin/categories")
-def get_categories():
-    try:
-        conn = get_db_connection()
-        cur = conn.cursor(dictionary=True)
 
-        cur.execute("SELECT category_id, category_name FROM categories ORDER BY category_id DESC")
-        categories = cur.fetchall()
-
-        cur.close()
-        conn.close()
-
-        return jsonify({"categories": categories})
-
-    except Exception as e:
-        print("ERROR:", e)
-        return jsonify({"error": str(e)}), 500
-@product_routes.post("/admin/categories")
-def create_category():
-    data = request.get_json()
-    name = data.get("category_name")
-
-    if not name:
-        return jsonify({"error": "Tên danh mục không được để trống"}), 400
-
-    conn = get_db_connection()
-    cur = conn.cursor()
-
-    cur.execute("INSERT INTO categories(category_name) VALUES (%s)", (name,))
-    conn.commit()
-
-    cur.close()
-    conn.close()
-
-    return jsonify({"message": "created"})
-
-# ============================
-# TOGGLE ENABLE / DISABLE PRODUCT
-# ============================
+# ====================================================
+# ADMIN: BẬT / TẮT SẢN PHẨM
+# ====================================================
 @product_routes.put("/admin/products/<int:product_id>/toggle")
-def toggle_product(product_id):
+def admin_toggle_product(product_id):
     conn = get_db_connection()
-    cur = conn.cursor()
+    cur = conn.cursor(dictionary=True)
 
     cur.execute("SELECT is_active FROM products WHERE product_id=%s", (product_id,))
-    row = cur.fetchone()
+    prod = cur.fetchone()
 
-    new_status = 0 if row[0] == 1 else 1
+    new_status = 0 if prod["is_active"] == 1 else 1
 
-    cur.execute(
-        "UPDATE products SET is_active=%s WHERE product_id=%s",
-        (new_status, product_id)
-    )
+    cur.execute("UPDATE products SET is_active=%s WHERE product_id=%s",
+                (new_status, product_id))
+
     conn.commit()
-
     cur.close()
     conn.close()
-    return jsonify({"message": "updated", "status": new_status})
 
+    return jsonify({"message": "Status updated"})
+
+
+# ====================================================
+# ORDER SYSTEM: TRỪ TỒN KHO
+# ====================================================
+def reduce_stock(product_id, qty):
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        UPDATE products
+        SET quantity = quantity - %s
+        WHERE product_id = %s AND quantity >= %s
+    """, (qty, product_id, qty))
+
+    conn.commit()
+    cur.close()
+    conn.close()

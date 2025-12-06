@@ -1,62 +1,75 @@
 import { createContext, useContext, useState, useEffect } from "react";
 
 const CartContext = createContext();
+export const useCart = () => useContext(CartContext);
 
 export function CartProvider({ children }) {
   const [cart, setCart] = useState([]);
 
-  // Load cart từ localStorage
+  // --- Load cart từ localStorage ---
   useEffect(() => {
     const saved = JSON.parse(localStorage.getItem("cart") || "[]");
     setCart(saved);
   }, []);
 
-  // Lưu cart vào localStorage mỗi khi thay đổi
-  useEffect(() => {
-    localStorage.setItem("cart", JSON.stringify(cart));
-  }, [cart]);
+  // --- Hàm cập nhật localStorage + gửi event cho Header ---
+  const syncCart = (updatedCart) => {
+    setCart(updatedCart);
+    localStorage.setItem("cart", JSON.stringify(updatedCart));
 
-  // Add to cart
+    // báo cho Header cập nhật badge
+    window.dispatchEvent(new Event("cartUpdated"));
+  };
+
+  // --- ADD TO CART ---
   const addToCart = (product) => {
-    setCart((prev) => {
-      const exists = prev.find((i) => i.product_id === product.product_id);
-      if (exists) {
-        return prev.map((i) =>
-          i.product_id === product.product_id
-            ? { ...i, qty: i.qty + 1 }
-            : i
-        );
-      }
-      return [...prev, { ...product, qty: 1 }];
-    });
+    const price = Number(product.price);
+
+    let updated = [...cart];
+    const existed = updated.find((p) => p.product_id === product.product_id);
+
+    if (existed) {
+      existed.qty += 1;
+    } else {
+      updated.push({
+        product_id: product.product_id,
+        product_name: product.product_name,
+        image_url: product.image_url,
+        price: price,
+        qty: 1,
+      });
+    }
+
+    syncCart(updated);
   };
 
-  // Remove item
+  // --- REMOVE ITEM ---
   const removeFromCart = (id) => {
-    setCart((prev) => prev.filter((i) => i.product_id !== id));
+    const updated = cart.filter((item) => item.product_id !== id);
+    syncCart(updated);
   };
 
-  // Update quantity
+  // --- UPDATE QUANTITY ---
   const updateQty = (id, qty) => {
-    setCart((prev) =>
-      prev.map((i) =>
-        i.product_id === id ? { ...i, qty } : i
-      )
-    );
-  };
+    let updated = [...cart];
+    const item = updated.find((p) => p.product_id === id);
 
-  // Total count
-  const cartCount = cart.reduce((sum, i) => sum + i.qty, 0);
+    if (!item) return;
+
+    if (qty <= 0) {
+      updated = updated.filter((p) => p.product_id !== id);
+    } else {
+      item.qty = qty;
+    }
+
+    syncCart(updated);
+  };
 
   return (
     <CartContext.Provider
-      value={{ cart, addToCart, removeFromCart, updateQty, cartCount }}
+      value={{ cart, addToCart, removeFromCart, updateQty }}
     >
       {children}
     </CartContext.Provider>
   );
-}
-
-export function useCart() {
-  return useContext(CartContext);
 }

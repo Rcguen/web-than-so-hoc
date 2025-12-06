@@ -1,20 +1,21 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
-import "../pages/admin.css";   // FIX
+import "../pages/admin.css";
 
 export default function AdminProducts() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // ===== LOAD PRODUCT LIST =====
   const loadProducts = async () => {
     try {
       const res = await axios.get("http://127.0.0.1:5000/api/admin/products");
-      setProducts(res.data.products || []);
-      setLoading(false);
+      setProducts(res.data || []); // FIXED
     } catch (err) {
       console.error(err);
       alert("Không thể tải danh sách sản phẩm!");
+    } finally {
       setLoading(false);
     }
   };
@@ -23,6 +24,7 @@ export default function AdminProducts() {
     loadProducts();
   }, []);
 
+  // ===== TOGGLE STATUS =====
   const toggleStatus = async (product_id) => {
     try {
       await axios.put(
@@ -35,8 +37,7 @@ export default function AdminProducts() {
     }
   };
 
-  if (loading)
-    return <div className="admin-loading">Đang tải sản phẩm...</div>;
+  if (loading) return <div className="admin-loading">Đang tải sản phẩm...</div>;
 
   return (
     <div className="admin-page">
@@ -53,10 +54,12 @@ export default function AdminProducts() {
           <tr>
             <th>Mã</th>
             <th>Hình</th>
-            <th>Tên sản phẩm</th>
+            <th>Tên</th>
             <th>Giá</th>
             <th>Danh mục</th>
             <th>Trạng thái</th>
+            <th>Số lượng</th>
+            <th>Kho</th>
             <th>Hành động</th>
           </tr>
         </thead>
@@ -65,7 +68,13 @@ export default function AdminProducts() {
           {products.map((p) => (
             <tr key={p.product_id}>
               <td>{p.product_id}</td>
-              <td><img src={p.image_url} alt={p.product_name} className="product-thumb" /></td>
+              <td>
+                <img
+                  src={`http://127.0.0.1:5000${p.image_url}`}
+                  alt={p.product_name}
+                  className="product-thumb"
+                />
+              </td>
               <td>{p.product_name}</td>
               <td>{Number(p.price).toLocaleString()} đ</td>
               <td>{p.category_name}</td>
@@ -78,6 +87,9 @@ export default function AdminProducts() {
                   {p.is_active ? "Hiện" : "Ẩn"}
                 </button>
               </td>
+
+              <td>{p.quantity}</td>
+              <td>{p.stock}</td>
 
               <td>
                 <Link className="btn-edit" to={`/admin/products/${p.product_id}`}>

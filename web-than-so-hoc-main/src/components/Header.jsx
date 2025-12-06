@@ -20,16 +20,30 @@ function Header() {
     setCartCount(total);
   };
 
+  // useEffect(() => {
+  //   updateCartCount();
+
+  //   // Lắng nghe event mỗi khi thêm/xóa sản phẩm
+  //   window.addEventListener("cartUpdated", updateCartCount);
+
+  //   return () => {
+  //     window.removeEventListener("cartUpdated", updateCartCount);
+  //   };
+  // }, []);
+
   useEffect(() => {
-    updateCartCount();
+  const update = () => {
+    const cart = JSON.parse(localStorage.getItem("cart") || "[]");
+    const totalQty = cart.reduce((sum, i) => sum + i.qty, 0);
+    setCartCount(totalQty);
+  };
 
-    // Lắng nghe event mỗi khi thêm/xóa sản phẩm
-    window.addEventListener("cartUpdated", updateCartCount);
+  update();
+  window.addEventListener("cartUpdated", update);
 
-    return () => {
-      window.removeEventListener("cartUpdated", updateCartCount);
-    };
-  }, []);
+  return () => window.removeEventListener("cartUpdated", update);
+}, []);
+
 
   const handleLogout = () => {
     localStorage.removeItem("user");
@@ -258,7 +272,7 @@ function Header() {
             {/* 🛒 GIỎ HÀNG + BADGE */}
             <Link to="/cart" className="cart-icon" style={{ position: "relative" }}>
               <span className="icon">🛒</span>
-              {cartCount > 0 && (
+              {contextCartCount > 0 && (
                 <span
                   style={{
                     position: "absolute",
