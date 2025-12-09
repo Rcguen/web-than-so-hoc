@@ -1,49 +1,75 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
-import { useCart } from "../../context/CartContext";
+import { useParams, Link } from "react-router-dom";
+import axios from "axios";
+import "./Page.css";
 
-export default function ProductDetail() {
+function ProductDetail() {
   const { id } = useParams();
-  const { addToCart } = useCart();
-
   const [product, setProduct] = useState(null);
 
-  // === LOAD PRODUCT ===
   const loadProduct = async () => {
-    const res = await fetch(`http://127.0.0.1:5000/api/products/${id}`);
-    const data = await res.json();
-    setProduct(data);
+    try {
+      const res = await axios.get(`http://127.0.0.1:5000/api/products/${id}`);
+      setProduct(res.data || null);
+    } catch (err) {
+      console.error("Load product error:", err);
+    }
   };
 
   useEffect(() => {
     loadProduct();
-  }, [id]); // fix warning
+  }, [id]);
 
-  if (!product) return <p>Đang tải...</p>;
+  // Add to cart
+  const addToCart = () => {
+    let cart = JSON.parse(localStorage.getItem("cart") || "[]");
+
+    const existed = cart.find((item) => item.product_id === product.product_id);
+
+    if (existed) {
+      existed.qty += 1;
+    } else {
+      cart.push({
+        product_id: product.product_id,
+        product_name: product.product_name,
+        price: product.price,
+        qty: 1,
+        image_url: product.image_url
+      });
+    }
+
+    localStorage.setItem("cart", JSON.stringify(cart));
+    window.dispatchEvent(new Event("cartUpdated"));
+
+    alert("Đã thêm vào giỏ hàng!");
+  };
+
+  if (!product) return <h2>Đang tải...</h2>;
 
   return (
-    <div style={{ padding: "80px" }}>
-      <div style={{ display: "flex", gap: "40px" }}>
+    <div className="product-detail-container">
+      <Link to="/shop" className="btn-back-shop">⬅ Quay lại cửa hàng</Link>
+
+      <div className="detail-box">
         <img
           src={`http://127.0.0.1:5000${product.image_url}`}
           alt={product.product_name}
-          style={{ width: "400px", borderRadius: "12px" }}
+          className="detail-img"
         />
 
-        <div>
+        <div className="detail-info">
           <h1>{product.product_name}</h1>
-          <p style={{ fontWeight: "bold", color: "#5b03e4" }}>
-            {Number(product.price).toLocaleString()} đ
-          </p>
+          <p className="detail-price">{Number(product.price).toLocaleString()} đ</p>
 
-          <p>{product.description}</p>
+          <p className="detail-desc">{product.description}</p>
 
-          <button className="btn-add-cart" onClick={() => addToCart(product)}>
-  Thêm vào giỏ hàng
-</button>
-
+          <button onClick={addToCart} className="btn-add-cart">
+            Thêm vào giỏ hàng 🛒
+          </button>
         </div>
       </div>
     </div>
   );
 }
+
+export default ProductDetail;

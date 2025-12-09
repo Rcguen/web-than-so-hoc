@@ -329,6 +329,8 @@ function Header() {
           <li><NavLink to="/admin" onClick={() => setMenuOpen(false)}><div className="icon-dot">🎉</div>Admin Panel</NavLink></li>
           <li><NavLink to="/shop" onClick={() => setMenuOpen(false)}><div className="icon-dot">🛒</div>Cửa Hàng</NavLink></li>
           <li><NavLink to="/cart" onClick={() => setMenuOpen(false)}><div className="icon-dot">🛍️</div>Giỏ Hàng</NavLink></li>
+          <li><NavLink to="/orders" onClick={() => setMenuOpen(false)}><div className="icon-dot">📦</div>Đơn Hàng</NavLink></li>
+          
           <li><NavLink to="/contact" onClick={() => setMenuOpen(false)}><div className="icon-dot">📞</div>Liên Hệ</NavLink></li>
 
         </ul>

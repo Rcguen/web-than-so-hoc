@@ -1,12 +1,18 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import "./Page.css";
+import { Link, useNavigate } from "react-router-dom";
 
 function Checkout() {
+  const navigate = useNavigate();
+  const user = JSON.parse(localStorage.getItem("user") || "null");
+
   const [cart, setCart] = useState([]);
-  const [customer, setCustomer] = useState({
-    fullname: "",
-    phone: "",
-    address: "",
-    notes: ""
+  const [form, setForm] = useState({
+    customer_name: "",
+    customer_phone: "",
+    customer_address: "",
+    note: ""
   });
 
   useEffect(() => {
@@ -14,156 +20,71 @@ function Checkout() {
     setCart(saved);
   }, []);
 
-  const totalPrice = cart.reduce(
+  const total = cart.reduce(
     (sum, item) => sum + Number(item.price) * Number(item.qty),
     0
   );
 
-  const handleInput = (e) => {
-    const { name, value } = e.target;
-    setCustomer((prev) => ({ ...prev, [name]: value }));
-  };
-
   const submitOrder = async () => {
-    if (!customer.fullname || !customer.phone || !customer.address) {
-      alert("Vui lòng nhập đầy đủ thông tin nhận hàng");
-      return;
-    }
-
-    if (cart.length === 0) {
-      alert("Giỏ hàng trống");
-      return;
-    }
+    if (!cart.length) return alert("Giỏ hàng trống!");
 
     try {
-      const res = await fetch("http://127.0.0.1:5000/api/orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          customer,
-          cart
-        })
+      const res = await axios.post("http://127.0.0.1:5000/api/orders", {
+        user_id: user?.user_id || null,
+        ...form,
+        items: cart,
       });
 
-      const data = await res.json();
+      if (res.data.status === "success") {
+        localStorage.removeItem("cart");
+        window.dispatchEvent(new Event("cartUpdated"));
 
-      if (!res.ok || data.status !== "success") {
-        throw new Error(data.message || "Đặt hàng thất bại");
+        navigate("/thank-you");
       }
-
-      alert(`Đặt hàng thành công! Mã đơn: #${data.order_id}`);
-
-      // Clear cart
-      localStorage.removeItem("cart");
-      setCart([]);
-      setCustomer({
-        fullname: "",
-        phone: "",
-        address: "",
-        notes: ""
-      });
     } catch (err) {
       console.error(err);
-      alert("Có lỗi xảy ra khi gửi đơn hàng, vui lòng thử lại.");
+      alert("Đặt hàng thất bại!");
     }
   };
 
   return (
-    <div
-      style={{
-        padding: "40px 20px",
-        background: "#f3ecff",
-        minHeight: "100vh"
-      }}
-    >
-      <h1 style={{ textAlign: "center", marginBottom: "20px" }}>
-        Thanh toán đơn hàng
-      </h1>
+    <div className="checkout-container">
+      <Link to="/cart" className="btn-back-cart">⬅ Quay lại giỏ hàng</Link>
 
-      <div style={{ maxWidth: "600px", margin: "30px auto" }}>
-        <h3>Thông tin nhận hàng</h3>
+      <h1>Thanh toán</h1>
 
+      {/* FORM */}
+      <div className="checkout-form">
         <input
-          className="checkout-input"
+          type="text"
           placeholder="Họ và tên"
-          name="fullname"
-          value={customer.fullname}
-          onChange={handleInput}
+          value={form.customer_name}
+          onChange={(e) => setForm({ ...form, customer_name: e.target.value })}
         />
-
         <input
-          className="checkout-input"
+          type="text"
           placeholder="Số điện thoại"
-          name="phone"
-          value={customer.phone}
-          onChange={handleInput}
+          value={form.customer_phone}
+          onChange={(e) => setForm({ ...form, customer_phone: e.target.value })}
         />
-
         <input
-          className="checkout-input"
-          placeholder="Địa chỉ nhận hàng"
-          name="address"
-          value={customer.address}
-          onChange={handleInput}
+          type="text"
+          placeholder="Địa chỉ"
+          value={form.customer_address}
+          onChange={(e) =>
+            setForm({ ...form, customer_address: e.target.value })
+          }
         />
-
         <textarea
-          className="checkout-input"
-          placeholder="Ghi chú thêm"
-          name="notes"
-          value={customer.notes}
-          onChange={handleInput}
-        />
+          placeholder="Ghi chú"
+          value={form.note}
+          onChange={(e) => setForm({ ...form, note: e.target.value })}
+        ></textarea>
 
-        <h3 style={{ marginTop: "30px" }}>Sản phẩm</h3>
-        {cart.map((item, i) => (
-          <div
-            key={i}
-            style={{
-              padding: "15px",
-              background: "#fff",
-              marginBottom: "10px",
-              borderRadius: "8px",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
-            }}
-          >
-            <div>
-              <strong>{item.product_name || item.name}</strong>
-              <p>
-                {item.qty} × {Number(item.price).toLocaleString()} đ
-              </p>
-            </div>
-            <strong style={{ color: "#5b03e4" }}>
-              {(Number(item.price) * Number(item.qty)).toLocaleString()} đ
-            </strong>
-          </div>
-        ))}
+        <h2>Tổng thanh toán: {total.toLocaleString()} đ</h2>
 
-        <h2 style={{ textAlign: "center", marginTop: "20px" }}>
-          Tổng cộng:{" "}
-          <span style={{ color: "#5b03e4" }}>
-            {totalPrice.toLocaleString()} đ
-          </span>
-        </h2>
-
-        <button
-          onClick={submitOrder}
-          style={{
-            width: "100%",
-            marginTop: "20px",
-            padding: "15px",
-            background: "#5b03e4",
-            color: "#fff",
-            border: "none",
-            borderRadius: "8px",
-            fontSize: "18px",
-            cursor: "pointer"
-          }}
-        >
-          Xác nhận thanh toán
+        <button className="checkout-btn" onClick={submitOrder}>
+          Xác nhận đặt hàng
         </button>
       </div>
     </div>

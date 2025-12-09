@@ -28,6 +28,11 @@ import ProductList from './admin/pages/ProductList.jsx';
 import AdminProductDetail from './admin/pages/AdminProductDetail.jsx';
 import AdminCategories from './admin/pages/AdminCategory.jsx';
 import AdminCategoryDetail from "./admin/pages/AdminCategoryDetail";
+import OrderHistory from './pages/order/OrderHistory.jsx';
+import OrderDetailUser from './pages/order/OrderDetailUser.jsx';
+import ThankYou from './pages/order/ThankYou.jsx';
+import UserOrders from './pages/order/UserOrders.jsx';
+
 
 function App() {
   const location = useLocation(); // ⭐ Giờ đã OK vì Router nằm ở index.js
@@ -72,9 +77,20 @@ function App() {
           <Route path="/product/:id" element={<ProductDetail />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/checkout" element={<Checkout />} />
+          <Route path="/orders" element={<OrderHistory />} />
+          <Route path="/order/:order_id" element={<OrderDetailUser />} />
+          <Route path="/orders" element={<UserOrders />} />
+          <Route path="/thank-you" element={<ThankYou />} />  
 
           {/* Admin */}
-          <Route path="/admin" element={<AdminLayout />}>
+          <Route
+  path="/admin"
+  element={
+    <RequireAdmin>
+      <AdminLayout />
+    </RequireAdmin>
+  }
+>
 
     <Route index element={<Dashboard />} />
 

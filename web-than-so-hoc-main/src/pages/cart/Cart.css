@@ -173,3 +173,17 @@ button {
   margin-top: 20px;
   cursor: pointer;
 }
+
+.btn-back {
+  margin-top: 20px;
+  padding: 10px 16px;
+  background: #5b03e4;
+  color: white;
+  border-radius: 8px;
+  cursor: pointer;
+  border: none;
+}
+
+.btn-back:hover {
+  background: #7c1bff;
+}

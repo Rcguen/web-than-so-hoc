@@ -91,6 +91,10 @@ function Cart() {
         </div>
       ))}
 
+      <Link to="/shop">
+  <button className="btn-back">⬅ Quay lại cửa hàng</button>
+</Link>
+
       {/* TỔNG TIỀN */}
       <div className="cart-total-box">
         <h2>Tổng thanh toán:</h2>
