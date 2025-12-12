@@ -56,11 +56,13 @@ function App() {
             path="/"
             element={
               <>
+
                 <Hero />
                 <Services />
                 <Projects />
                 <Infos />
                 <Contact />
+
               </>
             }
           />
@@ -84,7 +86,7 @@ function App() {
 
           {/* Admin */}
           <Route
-  path="/admin"
+  path="/admin/*"
   element={
     <RequireAdmin>
       <AdminLayout />

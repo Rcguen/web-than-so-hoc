@@ -1,11 +1,15 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+
 
 function Login() {
   const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");
   const [error, setError]       = useState("");
   const navigate = useNavigate();
+  const { login } = useAuth();
+
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -21,9 +25,16 @@ function Login() {
         setError(data.message || "Đăng nhập thất bại");
         return;
       }
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify(data.user));
+      // localStorage.setItem("token", data.token);
+      // localStorage.setItem("user", JSON.stringify(data.user));
+      // sau khi login thành công
+      login(data.user, data.token);
+      if (data.user.role === "admin") {
+      navigate("/admin");
+    } else {
       navigate("/");
+    }
+
     } catch {
       setError("Lỗi kết nối server!");
     }

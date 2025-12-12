@@ -12,6 +12,7 @@ function Header() {
   const navigate = useNavigate();
 
   const user = JSON.parse(localStorage.getItem("user") || "null");
+  
 
   // 🔥 CẬP NHẬT GIỎ HÀNG REALTIME
   const updateCartCount = () => {
@@ -326,7 +327,7 @@ function Header() {
             </div>
           </li>
 
-          <li><NavLink to="/admin" onClick={() => setMenuOpen(false)}><div className="icon-dot">🎉</div>Admin Panel</NavLink></li>
+          {user && user.role === "Admin" && (<li><NavLink to="/admin" onClick={() => setMenuOpen(false)}><div className="icon-dot">🎉</div>Admin Panel</NavLink></li>)}
           <li><NavLink to="/shop" onClick={() => setMenuOpen(false)}><div className="icon-dot">🛒</div>Cửa Hàng</NavLink></li>
           <li><NavLink to="/cart" onClick={() => setMenuOpen(false)}><div className="icon-dot">🛍️</div>Giỏ Hàng</NavLink></li>
           <li><NavLink to="/orders" onClick={() => setMenuOpen(false)}><div className="icon-dot">📦</div>Đơn Hàng</NavLink></li>
