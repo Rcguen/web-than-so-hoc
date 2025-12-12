@@ -32,19 +32,15 @@ import OrderHistory from './pages/order/OrderHistory.jsx';
 import OrderDetailUser from './pages/order/OrderDetailUser.jsx';
 import ThankYou from './pages/order/ThankYou.jsx';
 import UserOrders from './pages/order/UserOrders.jsx';
+import { AuthProvider } from "./context/AuthContext";
+import RequireAdmin from "./routes/RequireAdmin";
+import ProtectedRoute from "./routes/ProtectedRoute";
+
 
 
 function App() {
   const location = useLocation(); // ⭐ Giờ đã OK vì Router nằm ở index.js
-  const RequireAdmin = ({ children }) => {
-  const user = JSON.parse(localStorage.getItem("user") || "{}");
-
-  if (!user || user.role !== "Admin") {
-    return <h1 style={{padding: 40}}>⛔ Bạn không có quyền truy cập trang Admin.</h1>;
-  }
-
-  return children;
-};
+  
 
   return (
     <CartProvider>
@@ -77,9 +73,21 @@ function App() {
           <Route path="/report" element={<Report />} />
           <Route path="/shop" element={<Shop />} />
           <Route path="/product/:id" element={<ProductDetail />} />
-          <Route path="/cart" element={<Cart />} />
+          <Route path="/cart" element={
+            <ProtectedRoute>
+              <Cart />
+            </ProtectedRoute>
+          } />
           <Route path="/checkout" element={<Checkout />} />
-          <Route path="/orders" element={<OrderHistory />} />
+          <Route
+  path="/orders"
+  element={
+    <ProtectedRoute>
+      <OrderHistory />
+    </ProtectedRoute>
+  }
+/>
+
           <Route path="/order/:order_id" element={<OrderDetailUser />} />
           <Route path="/orders" element={<UserOrders />} />
           <Route path="/thank-you" element={<ThankYou />} />  
@@ -88,11 +96,12 @@ function App() {
           <Route
   path="/admin/*"
   element={
-    <RequireAdmin>
+    <ProtectedRoute role="admin">
       <AdminLayout />
-    </RequireAdmin>
+    </ProtectedRoute>
   }
 >
+
 
     <Route index element={<Dashboard />} />
 

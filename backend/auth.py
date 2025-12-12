@@ -75,6 +75,7 @@ def login():
             "full_name": user["full_name"],
             "email": user["email"],
             "gender": user.get("gender", "Khác"),
-            "role": user.get("role", "User"),
+            "role": (user.get("role") or "user").lower()
+
         }
     }), 200
