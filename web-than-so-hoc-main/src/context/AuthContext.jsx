@@ -11,6 +11,7 @@ export function AuthProvider({ children }) {
 
   // 3️⃣ Load user từ localStorage khi F5
   useEffect(() => {
+  try {
     const savedUser = localStorage.getItem("user");
     const savedToken = localStorage.getItem("token");
 
@@ -18,9 +19,15 @@ export function AuthProvider({ children }) {
       setUser(JSON.parse(savedUser));
       setToken(savedToken);
     }
-
+  } catch (err) {
+    // dữ liệu lỗi → xoá
+    localStorage.removeItem("user");
+    localStorage.removeItem("token");
+  } finally {
     setLoading(false);
-  }, []);
+  }
+}, []);
+
 
   // 4️⃣ Login
   const login = (userData, tokenData) => {

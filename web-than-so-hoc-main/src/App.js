@@ -35,8 +35,9 @@ import UserOrders from './pages/order/UserOrders.jsx';
 import { AuthProvider } from "./context/AuthContext";
 import RequireAdmin from "./routes/RequireAdmin";
 import ProtectedRoute from "./routes/ProtectedRoute";
-
-
+import Profile from './pages/Profile.jsx';
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 function App() {
   const location = useLocation(); // ⭐ Giờ đã OK vì Router nằm ở index.js
@@ -45,6 +46,7 @@ function App() {
   return (
     <CartProvider>
       <>
+        <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover /> 
         <Header />
 
         <Routes>
@@ -91,7 +93,14 @@ function App() {
           <Route path="/order/:order_id" element={<OrderDetailUser />} />
           <Route path="/orders" element={<UserOrders />} />
           <Route path="/thank-you" element={<ThankYou />} />  
-
+          <Route
+  path="/profile"
+  element={
+    <ProtectedRoute>
+      <Profile />
+    </ProtectedRoute>
+  }
+/>
           {/* Admin */}
           <Route
   path="/admin/*"

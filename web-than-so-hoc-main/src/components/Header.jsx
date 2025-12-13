@@ -1,6 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { NavLink, useNavigate, Link } from "react-router-dom";
 import { useCart } from "../context/CartContext";
+import { useAuth } from "../context/AuthContext";
+import { toast } from "react-toastify";
+
 
 const HEADER_HEIGHT = "80px";
 
@@ -10,8 +13,12 @@ function Header() {
   const [cartCount, setCartCount] = useState(0);
   const { cartCount: contextCartCount } = useCart();
   const navigate = useNavigate();
+  const [avatarOpen, setAvatarOpen] = useState(false);
+  const avatarRef = useRef(null);
 
-  const user = JSON.parse(localStorage.getItem("user") || "null");
+  
+
+const { user, logout } = useAuth();
   
 
   // 🔥 CẬP NHẬT GIỎ HÀNG REALTIME
@@ -33,6 +40,18 @@ function Header() {
   // }, []);
 
   useEffect(() => {
+  const handleClickOutside = (e) => {
+    if (avatarRef.current && !avatarRef.current.contains(e.target)) {
+      setAvatarOpen(false);
+    }
+  };
+
+  document.addEventListener("mousedown", handleClickOutside);
+  return () => document.removeEventListener("mousedown", handleClickOutside);
+}, []);
+
+
+  useEffect(() => {
   const update = () => {
     const cart = JSON.parse(localStorage.getItem("cart") || "[]");
     const totalQty = cart.reduce((sum, i) => sum + i.qty, 0);
@@ -47,10 +66,11 @@ function Header() {
 
 
   const handleLogout = () => {
-    localStorage.removeItem("user");
-    localStorage.removeItem("token");
-    navigate("/login");
-  };
+  logout();
+  toast.info("🚪 Đăng xuất thành công!");
+  navigate("/login");
+};
+
 
   return (
     <>
@@ -262,13 +282,61 @@ function Header() {
           <div className="header-right">
 
             {user && (
-              <div className="user-info-h">
-                <span className="user-name">Hi, {user.full_name}</span>
-                <button className="btn-logout-h" onClick={handleLogout}>
-                  Thoát
-                </button>
-              </div>
-            )}
+  <div className="user-info-h" ref={avatarRef}>
+
+    {/* AVATAR (CLICK ĐỂ MỞ DROPDOWN) */}
+    <div
+      className="user-avatar"
+      onClick={() => setAvatarOpen(!avatarOpen)}
+      style={{ cursor: "pointer" }}
+      title="Tài khoản"
+    >
+      {user.full_name?.charAt(0).toUpperCase()}
+    </div>
+
+    {/* NAME + BADGE */}
+    <div
+      onClick={() => setAvatarOpen(!avatarOpen)}
+      style={{ cursor: "pointer", display: "flex", flexDirection: "column" }}
+    >
+      <span className="user-name">{user.full_name}</span>
+      {user.role === "admin" && <span className="admin-badge">ADMIN</span>}
+    </div>
+
+    {/* DROPDOWN */}
+    {avatarOpen && (
+      <div className="avatar-dropdown">
+        
+        {/* USER */}
+        <Link to="/orders" onClick={() => setAvatarOpen(false)}>
+          📦 Đơn hàng của tôi
+        </Link>
+
+        {/* ADMIN */}
+        {user.role === "admin" && (
+          <Link to="/admin" onClick={() => setAvatarOpen(false)}>
+            🛠️ Admin Panel
+          </Link>
+        )}
+
+        <div className="dropdown-divider" />
+
+        <button
+          className="dropdown-logout"
+          onClick={() => {
+            setAvatarOpen(false);
+            handleLogout();
+          }}
+        >
+          🚪 Đăng xuất
+        </button>
+      </div>
+    )}
+
+  </div>
+)}
+
+
 
             {/* 🛒 GIỎ HÀNG + BADGE */}
             <Link to="/cart" className="cart-icon" style={{ position: "relative" }}>
@@ -304,40 +372,202 @@ function Header() {
 
       {/* MENU POPUP */}
       <div className={`popup-menu ${menuOpen ? "show" : ""}`}>
+        {user && (
+  <li style={{ padding: "10px 15px" }}>
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "12px",
+        padding: "10px",
+        borderRadius: "12px",
+        background: "#f5f4ff",
+      }}
+    >
+      <div className="user-avatar">
+        {user.full_name?.charAt(0).toUpperCase()}
+      </div>
+
+      <div>
+        <div style={{ fontWeight: "bold", fontSize: "14px" }}>
+          {user.full_name}
+        </div>
+
+        {user.role === "admin" && (
+          <div className="admin-badge">
+            ADMIN
+          </div>
+        )}
+      </div>
+    </div>
+  </li>
+)}
+
         <ul className="popup-nav">
 
-          <li>
-            <NavLink to="/" onClick={() => setMenuOpen(false)}>
-              <div className="icon-dot">🏠</div>Trang Chủ
-            </NavLink>
-          </li>
+  {/* ================= MENU CÔNG KHAI ================= */}
+  <li>
+    <NavLink to="/" onClick={() => setMenuOpen(false)}>
+      <div className="icon-dot">🏠</div>Trang Chủ
+    </NavLink>
+  </li>
 
-          <li>
-            <div className="menu-item-span" onClick={() => setSubOpen(!subOpen)}>
-              <div className="icon-dot">🔮</div>
-              Thần Số Học
-              <span style={{ marginLeft: "auto" }}>{subOpen ? "▲" : "▼"}</span>
-            </div>
+  <li>
+    <div
+      className="menu-item-span"
+      onClick={() => setSubOpen(!subOpen)}
+    >
+      <div className="icon-dot">🔮</div>
+      Thần Số Học
+      <span style={{ marginLeft: "auto" }}>
+        {subOpen ? "▲" : "▼"}
+      </span>
+    </div>
 
-            <div className={`sub-menu ${subOpen ? "show" : ""}`}>
-              <NavLink to="/lookup" onClick={() => setMenuOpen(false)}>Tra Cứu</NavLink>
-              <NavLink to="/services" onClick={() => setMenuOpen(false)}>Các Chỉ Số</NavLink>
-              <NavLink to="/projects" onClick={() => setMenuOpen(false)}>Báo Cáo Mẫu</NavLink>
-              <NavLink to="/history" onClick={() => setMenuOpen(false)}>Lịch Sử</NavLink>
-            </div>
-          </li>
+    <div className={`sub-menu ${subOpen ? "show" : ""}`}>
+      <NavLink to="/lookup" onClick={() => setMenuOpen(false)}>
+        Tra Cứu
+      </NavLink>
+      <NavLink to="/services" onClick={() => setMenuOpen(false)}>
+        Các Chỉ Số
+      </NavLink>
+      <NavLink to="/projects" onClick={() => setMenuOpen(false)}>
+        Báo Cáo Mẫu
+      </NavLink>
+    </div>
+  </li>
 
-          {user && user.role === "Admin" && (<li><NavLink to="/admin" onClick={() => setMenuOpen(false)}><div className="icon-dot">🎉</div>Admin Panel</NavLink></li>)}
-          <li><NavLink to="/shop" onClick={() => setMenuOpen(false)}><div className="icon-dot">🛒</div>Cửa Hàng</NavLink></li>
-          <li><NavLink to="/cart" onClick={() => setMenuOpen(false)}><div className="icon-dot">🛍️</div>Giỏ Hàng</NavLink></li>
-          <li><NavLink to="/orders" onClick={() => setMenuOpen(false)}><div className="icon-dot">📦</div>Đơn Hàng</NavLink></li>
-          
-          <li><NavLink to="/contact" onClick={() => setMenuOpen(false)}><div className="icon-dot">📞</div>Liên Hệ</NavLink></li>
+  <li>
+    <NavLink to="/shop" onClick={() => setMenuOpen(false)}>
+      <div className="icon-dot">🛒</div>Cửa Hàng
+    </NavLink>
+  </li>
 
-        </ul>
+  {/* ================= MENU USER (ĐÃ LOGIN) ================= */}
+  {user && (
+    <>
+      <li>
+        <NavLink to="/cart" onClick={() => setMenuOpen(false)}>
+          <div className="icon-dot">🛍️</div>Giỏ Hàng
+        </NavLink>
+      </li>
+
+      <li>
+        <NavLink to="/profile" onClick={() => setMenuOpen(false)}>
+          <div className="icon-dot">👤</div>Hồ Sơ Của Tôi
+        </NavLink>
+      </li>
+
+      <li>
+        <NavLink to="/orders" onClick={() => setMenuOpen(false)}>
+          <div className="icon-dot">📦</div>Đơn Hàng Của Tôi
+        </NavLink>
+      </li>
+    </>
+  )}
+
+  {/* ================= MENU ADMIN ================= */}
+  {user && user.role === "admin" && (
+    <li>
+      <NavLink to="/admin" onClick={() => setMenuOpen(false)}>
+        <div className="icon-dot">🛠️</div>Admin Panel
+      </NavLink>
+    </li>
+  )}
+
+  {/* ================= MENU KHÁCH (CHƯA LOGIN) ================= */}
+  {!user && (
+    <>
+      <li>
+        <NavLink to="/login" onClick={() => setMenuOpen(false)}>
+          <div className="icon-dot">🔐</div>Đăng Nhập
+        </NavLink>
+      </li>
+
+      <li>
+        <NavLink to="/register" onClick={() => setMenuOpen(false)}>
+          <div className="icon-dot">📝</div>Đăng Ký
+        </NavLink>
+      </li>
+    </>
+  )}
+
+</ul>
+
       </div>
     </>
   );
 }
 
 export default Header;
+
+<style>{`.user-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #fff;
+  color: #7a00ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 16px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+.admin-badge {
+  margin-top: 2px;
+  display: inline-block;
+  background: #ffd700;
+  color: #333;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 6px;
+  width: fit-content;
+}
+
+.avatar-dropdown {
+  position: absolute;
+  top: 60px;
+  right: 0;
+  background: #fff;
+  border-radius: 12px;
+  min-width: 200px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+  padding: 8px;
+  z-index: 3000;
+}
+
+.avatar-dropdown a,
+.avatar-dropdown button {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  text-decoration: none;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  font-size: 14px;
+  color: #333;
+}
+
+.avatar-dropdown a:hover,
+.avatar-dropdown button:hover {
+  background: #f5f4ff;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background: #eee;
+  margin: 6px 0;
+}
+
+.dropdown-logout {
+  color: #ff4d4f;
+  font-weight: 600;
+}
+
+`}</style>

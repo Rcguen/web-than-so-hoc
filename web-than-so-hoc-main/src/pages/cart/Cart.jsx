@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from "react";
 import "./Cart.css";
 import { Link } from "react-router-dom";
+import Swal from "sweetalert2";
+import { toast } from "react-toastify";
+import { useAuth } from "../../context/AuthContext";
 
 function Cart() {
   const [cart, setCart] = useState([]);

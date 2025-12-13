@@ -8,17 +8,25 @@ from shop.category_routes import category_routes
 from flask import send_from_directory
 import os
 from shop.order_routes import order_routes
+from shop.profile_routes import profile
 
-
-
-UPLOAD_FOLDER = os.path.join(os.getcwd(), "uploads")
 
 app = Flask(__name__)
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+UPLOAD_FOLDER = os.path.join(BASE_DIR, "uploads", "avatars")
+
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
 CORS(app)
 app.register_blueprint(auth)
+app.register_blueprint(profile)
 app.register_blueprint(product_routes, url_prefix="/api")
 app.register_blueprint(category_routes, url_prefix="/api")
 app.register_blueprint(order_routes, url_prefix="/api")
+
+app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
+app.config["MAX_CONTENT_LENGTH"] = 2 * 1024 * 1024  # 2MB
 
 # =====================================================
 # 🔢 1. HÀM TÍNH TOÁN BIỂU ĐỒ SINH MỆNH (Pythagoras)
@@ -309,6 +317,11 @@ def health():
 def serve_uploads(filename):
     upload_folder = os.path.join(os.getcwd(), 'uploads')
     return send_from_directory(upload_folder, filename)
+
+# Cho phép truy cập ảnh
+@app.route("/uploads/avatars/<filename>")
+def uploaded_avatar(filename):
+    return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
 
 # =====================================================
 # 🚀 MAIN ENTRY
