@@ -38,6 +38,8 @@ import ProtectedRoute from "./routes/ProtectedRoute";
 import Profile from './pages/Profile.jsx';
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import MockPayment from './pages/payment/MockPayment.jsx';
+
 
 function App() {
   const location = useLocation(); // ⭐ Giờ đã OK vì Router nằm ở index.js
@@ -101,6 +103,8 @@ function App() {
     </ProtectedRoute>
   }
 />
+          <Route path="/payment/mock/:orderId" element={<MockPayment />} />
+
           {/* Admin */}
           <Route
   path="/admin/*"

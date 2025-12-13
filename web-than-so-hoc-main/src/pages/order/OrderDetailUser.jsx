@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
+import OrderStatusBadge from "../../components/OrderStatusBadge";
+
+
 
 function OrderDetailUser() {
   const { order_id } = useParams();
@@ -22,7 +25,8 @@ function OrderDetailUser() {
 
       <p>Trạng thái: {data.order.order_status}</p>
       <p>Tổng tiền: {Number(data.order.total_price).toLocaleString()} đ</p>
-
+      <p>Ngày đặt: {new Date(data.order.created_at).toLocaleString("vi-VN")}</p>
+      <p>Thanh toán: {data.order.payment_status}</p>
       <h2>Sản phẩm</h2>
 
       {data.items.map((item) => (

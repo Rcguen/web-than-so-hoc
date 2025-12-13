@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import axios from "axios";
+import PaymentBadge from "../../components/PaymentBadge";
+import AdminOrderStatusBadge from "../pages/AdminOrderStatusBadge";
+
 
 export default function Orders() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("all");
+  const location = useLocation();
 
   const fetchOrders = async () => {
     try {
@@ -21,8 +25,15 @@ export default function Orders() {
   };
 
   useEffect(() => {
-    fetchOrders();
-  }, []);
+  fetchOrders();
+
+  const params = new URLSearchParams(location.search);
+  if (params.get("paid") === "1") {
+    // optional: toast cho admin
+    // toast.success("Đơn hàng đã được thanh toán!");
+  }
+}, [location.search]);
+
 
   const formatDate = (dateStr) => {
     return new Date(dateStr).toLocaleString("vi-VN");
@@ -63,6 +74,7 @@ export default function Orders() {
             <th>Trạng thái</th>
             <th>Ngày đặt</th>
             <th>Chi tiết</th>
+            <th>Thanh toán</th>
           </tr>
         </thead>
 
@@ -81,15 +93,21 @@ export default function Orders() {
 
                 {/* TRẠNG THÁI — ALWAYS SHOW */}
                 <td>
-                  <span className={`status-badge ${order.order_status || "unknown"}`}>
-  {order.order_status === "pending" && "Chờ xử lý"}
-  {order.order_status === "processing" && "Đang xử lý"}
-  {order.order_status === "shipping" && "Đang giao"}
-  {order.order_status === "completed" && "Hoàn thành"}
-  {!order.order_status && "Chưa có"} 
-</span>
+  <AdminOrderStatusBadge
+    status={order.order_status}
+    orderId={order.order_id}
+    onUpdated={(newStatus) => {
+      setOrders((prev) =>
+        prev.map((o) =>
+          o.order_id === order.order_id
+            ? { ...o, order_status: newStatus }
+            : o
+        )
+      );
+    }}
+  />
+</td>
 
-                </td>
 
                 <td>{formatDate(order.created_at)}</td>
                 <td>
@@ -97,6 +115,14 @@ export default function Orders() {
                     Xem
                   </Link>
                 </td>
+                {/* Thanh toán trạng thái */}
+                <td>
+  <PaymentBadge
+    status={order.payment_status}
+    orderId={order.order_id}
+  />
+</td>
+
               </tr>
             ))
           )}
