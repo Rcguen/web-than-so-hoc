@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Link , useLocation} from "react-router-dom";
+import { useParams, Link , useLocation} from "react-router-dom";
 import PaymentBadge from "../../components/PaymentBadge";
 import OrderStatusBadge from "../../components/OrderStatusBadge";
 
@@ -9,6 +9,7 @@ function OrderHistory() {
   const user = JSON.parse(localStorage.getItem("user"));
 
   const location = useLocation();
+const { id: order_id } = useParams();
 
 
   useEffect(() => {

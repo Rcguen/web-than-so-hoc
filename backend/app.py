@@ -9,7 +9,7 @@ from flask import send_from_directory
 import os
 from shop.order_routes import order_routes
 from shop.profile_routes import profile
-
+from shipping.shipping_routes import shipping_routes
 
 app = Flask(__name__)
 
@@ -24,6 +24,8 @@ app.register_blueprint(profile)
 app.register_blueprint(product_routes, url_prefix="/api")
 app.register_blueprint(category_routes, url_prefix="/api")
 app.register_blueprint(order_routes, url_prefix="/api")
+app.register_blueprint(shipping_routes, url_prefix="/api")
+
 
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 app.config["MAX_CONTENT_LENGTH"] = 2 * 1024 * 1024  # 2MB

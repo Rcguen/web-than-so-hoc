@@ -92,8 +92,8 @@ function App() {
   }
 />
 
-          <Route path="/order/:order_id" element={<OrderDetailUser />} />
-          <Route path="/orders" element={<UserOrders />} />
+          <Route path="/order/:id" element={<OrderDetailUser />} />
+          <Route path="/orders" element={<OrderHistory />} />
           <Route path="/thank-you" element={<ThankYou />} />  
           <Route
   path="/profile"

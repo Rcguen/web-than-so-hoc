@@ -18,7 +18,12 @@ def create_order():
     customer_address = (data.get("customer_address") or "").strip()
     note             = data.get("note") or ""
     items            = data.get("items") or []
-    payment_method   = data.get("payment_method", "COD")  # 👈 QUAN TRỌNG
+    payment_method   = data.get("payment_method", "COD")
+
+    # shipping address
+    city     = data.get("city")
+    district = data.get("district")
+    ward     = data.get("ward")
 
     # ---------- validate ----------
     if not customer_name or not customer_phone or not customer_address:
@@ -27,31 +32,45 @@ def create_order():
     if not items:
         return jsonify({"message": "Giỏ hàng trống"}), 400
 
-    # ---------- tính tổng ----------
-    total_price = 0
-    for it in items:
-        try:
-            price = float(it.get("price", 0))
-            qty   = int(it.get("qty", 0))
-        except:
-            price, qty = 0, 0
-        total_price += price * qty
-
-    # ---------- trạng thái thanh toán ----------
-    if payment_method in ["MOMO", "VNPAY"]:
-        payment_status = "PENDING_PAYMENT"
-    else:
-        payment_status = "UNPAID"
-
     try:
         conn = get_db_connection()
-        cur  = conn.cursor()
+        cur  = conn.cursor(dictionary=True)
 
-        # 1️⃣ insert orders
+        # ---------- 1️⃣ TÍNH SUBTOTAL ----------
+        subtotal = 0
+        for it in items:
+            price = float(it.get("price", 0))
+            qty   = int(it.get("qty", 0))
+            subtotal += price * qty
+
+        # ---------- 2️⃣ LẤY PHÍ SHIP ----------
+        shipping_fee = 0
+        if city and district and ward:
+            cur.execute("""
+                SELECT price FROM shippings
+                WHERE city=%s AND district=%s AND ward=%s
+                LIMIT 1
+            """, (city, district, ward))
+
+            row = cur.fetchone()
+            if row:
+                shipping_fee = float(row["price"])
+
+        # ---------- 3️⃣ TỔNG TIỀN ----------
+        total_price = subtotal + shipping_fee
+
+        # ---------- 4️⃣ TRẠNG THÁI THANH TOÁN ----------
+        if payment_method in ["MOMO", "VNPAY"]:
+            payment_status = "PENDING_PAYMENT"
+        else:
+            payment_status = "UNPAID"
+
+        # ---------- 5️⃣ INSERT ORDERS ----------
         cur.execute("""
             INSERT INTO orders (
                 user_id,
                 total_price,
+                shipping_fee,
                 order_status,
                 payment_method,
                 payment_status,
@@ -61,10 +80,11 @@ def create_order():
                 customer_address,
                 note
             )
-            VALUES (%s,%s,'pending',%s,%s,NOW(),%s,%s,%s,%s)
+            VALUES (%s,%s,%s,'pending',%s,%s,NOW(),%s,%s,%s,%s)
         """, (
             user_id,
             total_price,
+            shipping_fee,
             payment_method,
             payment_status,
             customer_name,
@@ -75,7 +95,7 @@ def create_order():
 
         order_id = cur.lastrowid
 
-        # 2️⃣ insert order_items
+        # ---------- 6️⃣ INSERT ORDER ITEMS ----------
         for it in items:
             cur.execute("""
                 INSERT INTO order_items (order_id, product_id, quantity, price)
@@ -94,6 +114,9 @@ def create_order():
         return jsonify({
             "status": "success",
             "order_id": order_id,
+            "subtotal": subtotal,
+            "shipping_fee": shipping_fee,
+            "total_price": total_price,
             "payment_method": payment_method,
             "payment_status": payment_status
         }), 201
@@ -105,7 +128,6 @@ def create_order():
         except:
             pass
         return jsonify({"error": str(e)}), 500
-
 
 # ====================================================
 # 2. USER – MOCK THANH TOÁN MOMO / VNPAY (MỨC 1.5)
@@ -207,3 +229,49 @@ def get_user_orders(user_id):
     conn.close()
 
     return jsonify({"orders": orders})
+
+# ====================================================
+# USER – CHI TIẾT ĐƠN HÀNG
+# ====================================================
+@order_routes.get("/orders/user/<int:user_id>/<int:order_id>")
+def get_user_order_detail(user_id, order_id):
+    conn = get_db_connection()
+    cur = conn.cursor(dictionary=True)
+
+    # 1️⃣ Lấy thông tin đơn (đảm bảo đúng user)
+    cur.execute("""
+        SELECT *
+        FROM orders
+        WHERE order_id=%s AND user_id=%s
+        LIMIT 1
+    """, (order_id, user_id))
+
+    order = cur.fetchone()
+    if not order:
+        cur.close()
+        conn.close()
+        return jsonify({"message": "Order not found"}), 404
+
+    # 2️⃣ Lấy danh sách sản phẩm trong đơn
+    cur.execute("""
+        SELECT 
+            oi.order_item_id,
+            oi.product_id,
+            oi.quantity,
+            oi.price,
+            p.product_name,
+            p.image_url
+        FROM order_items oi
+        JOIN products p ON oi.product_id = p.product_id
+        WHERE oi.order_id=%s
+    """, (order_id,))
+
+    items = cur.fetchall()
+
+    cur.close()
+    conn.close()
+
+    return jsonify({
+        "order": order,
+        "items": items
+    })

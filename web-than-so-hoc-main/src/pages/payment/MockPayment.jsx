@@ -28,7 +28,7 @@ export default function MockPayment() {
       );
 
       toast.success("🎉 Thanh toán thành công!");
-      navigate("/orders?paid=1"); // hoặc /admin/orders nếu admin
+      navigate(`/order/${orderId}?paid=1`);// hoặc /admin/orders nếu admin
     } catch (err) {
       console.error(err);
       toast.error("❌ Thanh toán thất bại");

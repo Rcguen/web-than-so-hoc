@@ -5,18 +5,14 @@ import Swal from "sweetalert2";
 import { toast } from "react-toastify";
 import { useAuth } from "../../context/AuthContext";
 import { useCart } from "../../context/CartContext";
+import ShippingSelector from "../../components/ShippingSelector";
 
 function Checkout() {
   const navigate = useNavigate();
-
-  // ✅ Lấy user + logout từ AuthContext (không dùng localStorage trực tiếp)
   const { user, logout } = useAuth();
-
-  // ✅ Lấy cart từ CartContext (nếu CartContext của em chưa có cartItems/clearCart
-  // thì vẫn có fallback localStorage ở useEffect bên dưới)
   const cartCtx = useCart?.() || {};
-  const cartItemsFromCtx = cartCtx.cartItems || cartCtx.cart || null;
-  const clearCartFromCtx = cartCtx.clearCart || null;
+  const cartItemsFromCtx = cartCtx.cartItems || cartCtx.cart || [];
+  const clearCartFromCtx = cartCtx.clearCart;
 
   const [cart, setCart] = useState([]);
   const [form, setForm] = useState({
@@ -26,36 +22,55 @@ function Checkout() {
     note: "",
   });
 
-  // ✅ Load cart (ưu tiên CartContext, fallback localStorage để không vỡ app)
+  // ✅ state shipping (MỨC 2)
+  const [shipping, setShipping] = useState({
+    city: "",
+    district: "",
+    ward: "",
+    shipping_fee: 0,
+  });
+
+  // load cart
   useEffect(() => {
     if (Array.isArray(cartItemsFromCtx)) {
       setCart(cartItemsFromCtx);
-      return;
+    } else {
+      const saved = JSON.parse(localStorage.getItem("cart") || "[]");
+      setCart(saved);
     }
-    const saved = JSON.parse(localStorage.getItem("cart") || "[]");
-    setCart(saved);
   }, [cartItemsFromCtx]);
 
-  // ✅ Tính tổng (hỗ trợ qty/quantity)
-  const total = cart.reduce((sum, item) => {
-    const qty = Number(item.qty ?? item.quantity ?? 0);
-    const price = Number(item.price ?? 0);
-    return sum + price * qty;
-  }, 0);
+ const subtotal = cart.reduce((sum, item) => {
+  const qty = Number(item.qty ?? item.quantity ?? 0);
+  const price = Number(item.price ?? 0);
+  return sum + price * qty;
+}, 0);
+
+const ship = Number(shipping.shipping_fee ?? 0);
+const total = subtotal + ship;
+
 
   const handlePlaceOrder = async () => {
-    // 0) Validate giỏ hàng + form cơ bản
     if (!cart.length) {
       toast.warning("🛒 Giỏ hàng trống!");
       return;
     }
-    if (!form.customer_name.trim() || !form.customer_phone.trim() || !form.customer_address.trim()) {
-      toast.warning("⚠️ Vui lòng nhập Họ tên / SĐT / Địa chỉ");
+
+    if (
+      !form.customer_name.trim() ||
+      !form.customer_phone.trim() ||
+      !form.customer_address.trim()
+    ) {
+      toast.warning("⚠️ Vui lòng nhập đầy đủ thông tin người nhận");
       return;
     }
 
-    // 1) Xác nhận
-    const result = await Swal.fire({
+    if (!shipping.city || !shipping.district || !shipping.ward) {
+      toast.warning("📍 Vui lòng chọn đầy đủ Tỉnh / Quận / Phường");
+      return;
+    }
+
+    const confirm = await Swal.fire({
       title: "Xác nhận đặt hàng?",
       text: "Bạn có chắc chắn muốn đặt đơn hàng này không?",
       icon: "question",
@@ -64,25 +79,24 @@ function Checkout() {
       cancelButtonText: "Hủy",
     });
 
-    if (!result.isConfirmed) return;
+    if (!confirm.isConfirmed) return;
 
-    // 2) Toast loading
     const loadingToast = toast.loading("⏳ Đang xử lý đơn hàng...");
 
     try {
-      // ✅ 3) Payload đúng theo submitOrder cũ của em
-      // Backend của em đã từng nhận: { user_id, ...form, items: cart }
       const payload = {
         user_id: user?.user_id || null,
         ...form,
         items: cart,
-        total_amount: total, // nếu backend không dùng thì cũng không sao
+
+        // 🔑 gửi địa chỉ để backend tính ship
+        city: shipping.city,
+        district: shipping.district,
+        ward: shipping.ward,
       };
 
-      // Debug nếu cần:
-      // console.log("ORDER PAYLOAD:", payload);
+      const token = localStorage.getItem("token");
 
-      const token = localStorage.getItem("token"); // token hiện em đang lưu ở localStorage
       const res = await fetch("http://127.0.0.1:5000/api/orders", {
         method: "POST",
         headers: {
@@ -92,10 +106,9 @@ function Checkout() {
         body: JSON.stringify(payload),
       });
 
-      // Nếu backend trả 401 → logout
       if (res.status === 401) {
         toast.update(loadingToast, {
-          render: "⚠️ Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại!",
+          render: "⚠️ Phiên đăng nhập đã hết hạn!",
           type: "error",
           isLoading: false,
           autoClose: 3000,
@@ -104,7 +117,7 @@ function Checkout() {
         return;
       }
 
-      const data = await res.json().catch(() => ({}));
+      const data = await res.json();
 
       if (!res.ok) {
         toast.update(loadingToast, {
@@ -116,15 +129,13 @@ function Checkout() {
         return;
       }
 
-      // ✅ Thành công
       toast.update(loadingToast, {
-        render: data.message || "🎉 Đặt hàng thành công!",
+        render: "🎉 Đặt hàng thành công!",
         type: "success",
         isLoading: false,
-        autoClose: 2500,
+        autoClose: 2000,
       });
 
-      // ✅ Clear cart (ưu tiên CartContext)
       if (typeof clearCartFromCtx === "function") {
         clearCartFromCtx();
       } else {
@@ -133,7 +144,6 @@ function Checkout() {
         setCart([]);
       }
 
-      // ✅ Điều hướng như flow cũ của em (thank-you) hoặc orders
       navigate("/thank-you");
     } catch (err) {
       console.error(err);
@@ -154,32 +164,51 @@ function Checkout() {
 
       <h1>Thanh toán</h1>
 
+      {/* 🔽 CHỌN ĐỊA CHỈ + PREVIEW SHIP */}
+      <ShippingSelector onChange={setShipping} />
+
       <div className="checkout-form">
         <input
           type="text"
           placeholder="Họ và tên"
           value={form.customer_name}
-          onChange={(e) => setForm({ ...form, customer_name: e.target.value })}
+          onChange={(e) =>
+            setForm({ ...form, customer_name: e.target.value })
+          }
         />
+
         <input
           type="text"
           placeholder="Số điện thoại"
           value={form.customer_phone}
-          onChange={(e) => setForm({ ...form, customer_phone: e.target.value })}
+          onChange={(e) =>
+            setForm({ ...form, customer_phone: e.target.value })
+          }
         />
+
         <input
           type="text"
-          placeholder="Địa chỉ"
+          placeholder="Địa chỉ chi tiết"
           value={form.customer_address}
-          onChange={(e) => setForm({ ...form, customer_address: e.target.value })}
+          onChange={(e) =>
+            setForm({ ...form, customer_address: e.target.value })
+          }
         />
+
         <textarea
           placeholder="Ghi chú"
           value={form.note}
           onChange={(e) => setForm({ ...form, note: e.target.value })}
         />
 
-        <h2>Tổng thanh toán: {total.toLocaleString()} đ</h2>
+        {/* 💰 TỔNG TIỀN */}
+        <div className="checkout-summary">
+          <p>Tạm tính: {subtotal.toLocaleString("vi-VN")} đ</p>
+<p>Phí vận chuyển: {ship.toLocaleString("vi-VN")} đ</p>
+<hr />
+<h2>Tổng cộng: {total.toLocaleString("vi-VN")} đ</h2>
+
+        </div>
 
         <button className="checkout-btn" onClick={handlePlaceOrder}>
           Xác nhận đặt hàng
