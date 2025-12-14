@@ -10,6 +10,7 @@ import os
 from shop.order_routes import order_routes
 from shop.profile_routes import profile
 from shipping.shipping_routes import shipping_routes
+from ai_service import generate_numerology_interpretation
 
 app = Flask(__name__)
 
@@ -362,6 +363,147 @@ def get_numerology_details(result_id):
         "info": info,
         "meanings": meanings
     })
+
+
+
+@app.post("/api/ai/interpret")
+def ai_interpret():
+    data = request.get_json()
+
+    interpretation = generate_numerology_interpretation({
+        "life_path": data["life_path"],
+        "destiny": data["destiny"],
+        "soul": data["soul"],
+        "personality": data["personality"]
+    })
+
+    return jsonify({
+        "interpretation": interpretation
+    })
+
+@app.route("/api/admin/dashboard")
+def admin_dashboard():
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+
+        # Tổng user
+        cur.execute("SELECT COUNT(*) AS total FROM users")
+        total_users = cur.fetchone()["total"]
+
+        # Tổng lượt tra cứu
+        cur.execute("SELECT COUNT(*) AS total FROM numerology_results")
+        total_lookups = cur.fetchone()["total"]
+
+        # Thống kê life path
+        cur.execute("""
+            SELECT life_path_number, COUNT(*) AS total
+            FROM numerology_results
+            WHERE life_path_number IS NOT NULL
+            GROUP BY life_path_number
+            ORDER BY life_path_number
+        """)
+        life_path_stats = cur.fetchall()
+
+        # Lookup theo ngày
+        cur.execute("""
+            SELECT DATE(created_at) AS date, COUNT(*) AS total
+            FROM numerology_results
+            GROUP BY DATE(created_at)
+            ORDER BY date
+        """)
+        lookup_by_day = cur.fetchall()
+
+        # Orders theo ngày
+        cur.execute("""
+            SELECT DATE(created_at) AS date, COUNT(*) AS total
+            FROM orders
+            GROUP BY DATE(created_at)
+            ORDER BY date
+        """)
+        orders_by_day = cur.fetchall()
+
+        return jsonify({
+            "total_users": total_users,
+            "total_lookups": total_lookups,
+            "life_path_stats": life_path_stats,
+            "lookup_by_day": lookup_by_day,
+            "orders_by_day": orders_by_day
+        })
+
+    except Exception as e:
+        print("❌ Dashboard error:", e)
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        try:
+            cur.close()
+            conn.close()
+        except:
+            pass
+
+@app.get("/api/admin/users")
+def admin_get_users():
+    conn = get_db_connection()
+    cur = conn.cursor(dictionary=True)
+
+    cur.execute("""
+        SELECT 
+            user_id,
+            full_name,
+            email,
+            role,
+            created_at,
+            is_active
+        FROM users
+        ORDER BY user_id DESC
+    """)
+
+    users = cur.fetchall()
+    cur.close()
+    conn.close()
+
+    return jsonify({"users": users})
+
+
+@app.put("/api/admin/users/<int:user_id>/role")
+def admin_update_user_role(user_id):
+    data = request.get_json()
+    role = data.get("role")
+
+    if role not in ["User", "Admin"]:
+        return jsonify({"message": "Role không hợp lệ"}), 400
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute(
+        "UPDATE users SET role=%s WHERE user_id=%s",
+        (role, user_id)
+    )
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    return jsonify({"message": "Cập nhật role thành công"})
+
+@app.put("/api/admin/users/<int:user_id>/toggle")
+def admin_toggle_user(user_id):
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        UPDATE users
+        SET is_active = NOT is_active
+        WHERE user_id = %s
+    """, (user_id,))
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    return jsonify({"message": "Đã cập nhật trạng thái user"})
 
 
 # =====================================================

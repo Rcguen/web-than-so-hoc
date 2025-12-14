@@ -7,9 +7,10 @@ export default function AdminSidebar() {
       <h2 className="admin-logo">🔮 ADMIN</h2>
 
       <ul className="admin-menu">
-        <li><NavLink to="/admin">Dashboard</NavLink></li>
+        <li><NavLink to="/admin/dashboard">Dashboard</NavLink></li>
         <li><NavLink to="/admin/orders">Đơn Hàng</NavLink></li>
         <li><NavLink to="/admin/products">Sản Phẩm</NavLink></li>
+        <li><NavLink to="/admin/users">Người Dùng</NavLink></li>
         <li>
   <NavLink to="/admin/categories" className={({ isActive }) => (isActive ? "active" : "")}>
     📂 Danh mục

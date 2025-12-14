@@ -20,7 +20,7 @@ import Cart from "./pages/cart/Cart";
 import { CartProvider } from "./context/CartContext";
 import Checkout from "./pages/shop/Checkout.jsx";
 import AdminLayout from "./admin/pages/AdminLayout.jsx";
-import Dashboard from "./admin/pages/Dashboard";
+import Dashboard from "./components/charts/LifePathChart.jsx";
 import Orders from "./admin/pages/Orders";
 import OrderDetail from "./admin/pages/OrderDetail";
 import AdminProducts from "./admin/pages/AdminProducts";
@@ -40,6 +40,8 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import MockPayment from './pages/payment/MockPayment.jsx';
 import ShippingSelector from './components/ShippingSelector.jsx';
+import AdminDashboard from './admin/pages/AdminDashboard.jsx';
+import AdminUsers from './admin/pages/AdminUser.jsx';
 
 function App() {
   const location = useLocation(); // ⭐ Giờ đã OK vì Router nằm ở index.js
@@ -106,34 +108,38 @@ function App() {
           <Route path="/payment/mock/:orderId" element={<MockPayment />} />
           <Route path="/shipping-selector" element={<ShippingSelector />} />
 
-          {/* Admin */}
           <Route
-  path="/admin/*"
+  path="/admin"
   element={
     <ProtectedRoute role="admin">
       <AdminLayout />
     </ProtectedRoute>
   }
 >
+  {/* /admin */}
+  <Route index element={<Dashboard />} />
 
+  {/* /admin/dashboard */}
+  <Route path="dashboard" element={<AdminDashboard />} />
 
-    <Route index element={<Dashboard />} />
+  {/* Orders */}
+  <Route path="orders" element={<Orders />} />
+  <Route path="orders/:order_id" element={<OrderDetail />} />
 
-    {/* Orders */}
-    <Route path="orders" element={<Orders key={location.key} />} />
-    <Route path="orders/:order_id" element={<OrderDetail />} />
+  {/* Products */}
+  <Route path="products" element={<AdminProducts />} />
+  <Route path="products/add" element={<AdminProductDetail />} />
+  <Route path="products/:id" element={<AdminProductDetail />} />
 
-    {/* Products */}
-    <Route path="products" element={<AdminProducts />} />
-    <Route path="products/add" element={<AdminProductDetail />} />   {/* NEW */}
-    <Route path="products/:id" element={<AdminProductDetail />} />
+  {/* Categories */}
+  <Route path="categories" element={<AdminCategories />} />
+  <Route path="categories/create" element={<AdminCategoryDetail />} />
+  <Route path="categories/:id" element={<AdminCategoryDetail />} />
 
-    {/* Categories */}
-    <Route path="categories" element={<AdminCategories />} />
-    <Route path="categories/:id" element={<AdminCategoryDetail />} />
-    <Route path="categories/create" element={<AdminCategoryDetail />} />
+  <Route path="users" element={<AdminUsers />} />
 
 </Route>
+
 
 
         </Routes>

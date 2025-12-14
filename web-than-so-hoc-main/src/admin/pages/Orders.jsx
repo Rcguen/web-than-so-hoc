@@ -14,7 +14,7 @@ export default function Orders() {
   const fetchOrders = async () => {
     try {
       const res = await axios.get("http://127.0.0.1:5000/api/admin/orders");
-      console.log("Orders:", res.data.orders); // DEBUG
+      console.log("Orders:", res.data); // DEBUG
       setOrders(res.data.orders || []);
       setLoading(false);
     } catch (err) {
