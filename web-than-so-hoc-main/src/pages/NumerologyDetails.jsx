@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 
 function NumerologyDetails() {
-  const { id } = useParams();      // id = result_id được truyền từ HistoryLookup
+  const { id: result_id } = useParams();      // id = result_id được truyền từ HistoryLookup
   const [details, setDetails] = useState(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
@@ -10,7 +10,7 @@ function NumerologyDetails() {
   useEffect(() => {
     async function loadDetails() {
       try {
-        const res = await fetch(`http://127.0.0.1:5000/api/numerology/details/${id}`);
+        const res = await fetch(`http://127.0.0.1:5000/api/numerology/details/${result_id}`);
         const data = await res.json();
         setDetails(data);
       } catch (err) {
@@ -19,7 +19,7 @@ function NumerologyDetails() {
       setLoading(false);
     }
     loadDetails();
-  }, [id]);
+  }, [result_id]);
 
   if (loading) {
     return <p style={{ textAlign: "center", marginTop: "80px" }}>⏳ Đang tải dữ liệu...</p>;

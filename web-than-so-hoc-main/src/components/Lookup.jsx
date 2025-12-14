@@ -11,6 +11,8 @@ function Lookup() {
   const [selectedMeaning, setSelectedMeaning] = useState(null);
   const [chartResp, setChartResp] = useState(null);
   const [arrowPopup, setArrowPopup] = useState(null); // popup mũi tên mạnh/yếu
+  const [hasResult, setHasResult] = useState(false);
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -30,6 +32,7 @@ function Lookup() {
 
       const data = await res.json();
       setResult(data);
+      setHasResult(true);
 
       // Gửi yêu cầu lấy Biểu đồ sinh mệnh + Mũi tên
       const chartRes = await fetch("http://127.0.0.1:5000/api/numerology/birth-chart", {
@@ -207,8 +210,7 @@ function Lookup() {
         </div>
       )}
 
-      {/* Biểu đồ Đỉnh cao & Thử thách */}
-    {birthDate && <LifePinnaclePyramid birthDate={birthDate} />}
+      
 
       {/* Popup ý nghĩa chỉ số */}
       {selectedMeaning && (
@@ -231,6 +233,9 @@ function Lookup() {
           </div>
         </div>
       )}
+
+      {/* Biểu đồ Đỉnh cao & Thử thách */}
+    {hasResult && birthDate && <LifePinnaclePyramid birthDate={birthDate} />}
     </div>
   );
 }

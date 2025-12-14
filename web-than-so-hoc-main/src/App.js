@@ -39,7 +39,7 @@ import Profile from './pages/Profile.jsx';
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import MockPayment from './pages/payment/MockPayment.jsx';
-
+import ShippingSelector from './components/ShippingSelector.jsx';
 
 function App() {
   const location = useLocation(); // ⭐ Giờ đã OK vì Router nằm ở index.js
@@ -104,6 +104,7 @@ function App() {
   }
 />
           <Route path="/payment/mock/:orderId" element={<MockPayment />} />
+          <Route path="/shipping-selector" element={<ShippingSelector />} />
 
           {/* Admin */}
           <Route

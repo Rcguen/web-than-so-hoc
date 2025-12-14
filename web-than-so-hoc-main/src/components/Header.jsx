@@ -434,6 +434,9 @@ const { user, logout } = useAuth();
       <NavLink to="/projects" onClick={() => setMenuOpen(false)}>
         Báo Cáo Mẫu
       </NavLink>
+      <NavLink to="/history" onClick={() => setMenuOpen(false)}>
+        Lịch Sử Tra Cứu
+      </NavLink>
     </div>
   </li>
 

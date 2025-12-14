@@ -325,6 +325,45 @@ def serve_uploads(filename):
 def uploaded_avatar(filename):
     return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
 
+
+@app.get("/api/numerology/details/<int:result_id>")
+def get_numerology_details(result_id):
+    conn = get_db_connection()
+    cur = conn.cursor(dictionary=True)
+
+    # 1️⃣ Lấy thông tin chính
+    cur.execute("""
+        SELECT *
+        FROM numerology_results
+        WHERE result_id = %s
+    """, (result_id,))
+    info = cur.fetchone()
+
+    if not info:
+        return jsonify({"error": "NOT_FOUND"}), 404
+
+    # 2️⃣ Lấy diễn giải
+    cur.execute("""
+        SELECT title, number, description
+        FROM numerology_meanings
+        WHERE number IN (%s, %s, %s)
+    """, (
+        info["life_path_number"],
+        info["destiny_number"],
+        info["soul_number"]
+    ))
+
+    meanings = cur.fetchall()
+
+    cur.close()
+    conn.close()
+
+    return jsonify({
+        "info": info,
+        "meanings": meanings
+    })
+
+
 # =====================================================
 # 🚀 MAIN ENTRY
 # =====================================================
