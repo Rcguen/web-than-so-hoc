@@ -1,8 +1,9 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+import requests
 from db import get_db_connection
 from auth import auth
-from datetime import datetime
+from datetime import datetime, timedelta
 from shop.product_routes import product_routes
 from shop.category_routes import category_routes
 from flask import send_from_directory
@@ -20,6 +21,7 @@ from ai_service import generate_full_report
 
 # =====================================================
 load_dotenv()
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 app = Flask(__name__)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -617,6 +619,320 @@ def get_knowledge():
     return jsonify({
         "knowledge": rows
     })
+
+@app.post("/api/chat")
+def chat():
+    user_message = (request.json.get("message", "") or "").strip()
+
+    if not user_message:
+        return jsonify({"reply": "Bạn vui lòng nhập câu hỏi 😊"})
+
+    try:
+        # 1️⃣ Nếu là câu hỏi Thần số học → xử lý chuyên biệt
+        if is_numerology_question(user_message):
+            # Fast path: direct lookup for queries like "số chủ đạo 8" or "life path 3"
+            direct = lookup_number_meaning(user_message)
+            if direct:
+                return jsonify({"reply": direct})
+
+            # Otherwise search KB snippets
+            snippets = fetch_numerology_snippets(user_message)
+            contents = [s.get("content") for s in snippets if s.get("content")]
+            if contents:
+                reply = "\n\n".join(contents)
+            else:
+                reply = numerology_ai_answer(user_message)
+
+        # 2️⃣ Nếu KHÔNG liên quan → dùng Gemini
+        else:
+            reply = answer_with_gemini(user_message)
+
+        return jsonify({"reply": reply})
+
+    except Exception as e:
+        print("Chat handler error:", e)
+        return jsonify({"reply": "Mình đã gặp lỗi khi xử lý yêu cầu. Vui lòng thử lại sau."}), 500
+
+def is_numerology_question(text):
+    keywords = [
+        "thần số học",
+        "life path", "số chủ đạo",
+        "destiny", "soul", "personality",
+        "ngày sinh", "con số"
+    ]
+    return any(k in text.lower() for k in keywords)
+
+
+
+def fallback_answer(text, use_gemini: bool = True):
+    """Return a friendly fallback message for queries outside the numerology KB.
+
+    If `use_gemini` is True and `GEMINI_API_KEY` is set, attempt to get an
+    AI-generated answer via `answer_with_gemini`. If the AI returns a clear
+    reply, forward it to the user; otherwise return helpful suggestions.
+    """
+    text = (text or "").strip()
+
+    # Helpful example prompts to guide users when they ask vague or unsupported questions
+    examples = (
+        "Bạn có thể thử các câu ví dụ sau:\n"
+        "- 'Ý nghĩa số Life Path 3 là gì?'\n"
+        "- 'Tôi sinh ngày 1990-05-23, số Destiny của tôi là bao nhiêu?'\n"
+        "- 'Giải thích con số Soul 7'\n"
+        "Hoặc gửi họ tên và ngày sinh để nhận báo cáo chi tiết."
+    )
+
+    base_msg = (
+        "Mình không tìm thấy thông tin phù hợp trong dữ liệu Thần số học. "
+        f"\n\n{examples}"
+    )
+
+    # If the user sent a long or specific question and Gemini is available, try AI as a fallback
+    if use_gemini and GEMINI_API_KEY:
+        try:
+            ai_reply = answer_with_gemini(text)
+            # Filter out obvious AI-system messages
+            bad_indicators = ["AI chưa được cấu hình", "AI đang quá tải", "AI không trả lời", "AI đang gặp lỗi"]
+            if ai_reply and not any(ind in ai_reply for ind in bad_indicators):
+                return ai_reply
+        except Exception as e:
+            print("fallback -> Gemini error:", e)
+
+    return base_msg
+
+def fetch_numerology_snippets(question, limit=5):
+    """Return list of rows (dict) matching the question."""
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("""
+        SELECT type, content
+        FROM numerology_knowledge
+        WHERE content LIKE %s OR title LIKE %s
+        LIMIT %s
+    """, (f"%{question}%", f"%{question}%", limit))
+
+    rows = cursor.fetchall()
+    cursor.close()
+    conn.close()
+
+    return rows
+
+
+def lookup_number_meaning(question):
+    """If the question mentions a single number (e.g. 'số chủ đạo 8'), try
+    to find a matching record in numerology_meanings and return a short
+    formatted answer. Returns None if not found.
+    """
+    import re
+    m = re.search(r"\b(\d{1,2})\b", question)
+    if not m:
+        return None
+
+    num = int(m.group(1))
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+        cur.execute("""
+            SELECT number, title, description, category
+            FROM numerology_meanings
+            WHERE number = %s
+            LIMIT 3
+        """, (num,))
+        rows = cur.fetchall()
+        cur.close(); conn.close()
+
+        if not rows:
+            return None
+
+        # Format short answer using available rows
+        parts = []
+        for r in rows:
+            title = r.get("title") or f"Ý nghĩa số {r.get('number')}"
+            desc = r.get("description") or ""
+            parts.append(f"{title}: {desc}")
+
+        return "\n\n".join(parts)
+
+    except Exception as e:
+        print("lookup_number_meaning error:", e)
+        return None
+
+
+def search_numerology_knowledge(question):
+    """Keep compatibility: return formatted string if snippets exist, otherwise not-found message."""
+    rows = fetch_numerology_snippets(question)
+    if not rows:
+        return "Mình chưa tìm thấy thông tin phù hợp trong dữ liệu Thần số học."
+    return "\n\n".join(r["content"] for r in rows)
+
+
+def numerology_ai_answer(question):
+    """Conservative AI fallback that only uses DB snippets; returns cautious message if none."""
+    snippets = fetch_numerology_snippets(question, limit=5)
+
+    if not snippets:
+        # No KB to ground the AI — be conservative
+        return "Mình chưa tìm thấy thông tin phù hợp trong dữ liệu Thần số học."
+
+    # Compose a strict instruction and include snippets as evidence
+    snippets_text = "\n\n".join(f"[{i+1}] ({s['type']}) {s['content']}" for i, s in enumerate(snippets))
+
+    instruction = (
+        "Bạn là trợ lý Thần số học. Trả lời bằng tiếng Việt. "
+        "**Chỉ** sử dụng thông tin có trong các đoạn dưới đây để trả lời (không suy diễn, không thêm thông tin). "
+        "Nếu đoạn dữ liệu không đủ để trả lời, trả lời: 'Mình chưa tìm thấy thông tin phù hợp trong dữ liệu Thần số học.' "
+        "Trả lời ngắn gọn và có thể trích dẫn số đoạn (ví dụ: [1])."
+    )
+
+    payload_text = f"{instruction}\n\nEVIDENCE:\n{snippets_text}\n\nQUESTION: {question}"
+
+    # Call Gemini directly with low temperature to avoid hallucination
+    if not GEMINI_API_KEY:
+        return "Mình chưa tìm thấy thông tin phù hợp trong dữ liệu Thần số học."
+
+    try:
+        res = requests.post(
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
+            params={"key": GEMINI_API_KEY},
+            json={
+                "contents": [{"parts": [{"text": payload_text}]}],
+                "generationConfig": {"temperature": 0.0, "maxOutputTokens": 300}
+            },
+            timeout=15
+        )
+        res.raise_for_status()
+        data = res.json()
+
+        candidates = data.get("candidates", [])
+        if not candidates:
+            return "Mình chưa tìm thấy thông tin phù hợp trong dữ liệu Thần số học."
+
+        content = candidates[0].get("content", {})
+        parts = content.get("parts", [])
+        if parts and isinstance(parts, list):
+            text_out = parts[-1].get("text", "").strip()
+            # If model refuses or says it can't find answer, normalize that message
+            negative_phrases = ["mình chưa tìm thấy", "không tìm thấy", "không có thông tin"]
+            if any(p in text_out.lower() for p in negative_phrases):
+                return "Mình chưa tìm thấy thông tin phù hợp trong dữ liệu Thần số học."
+            # Avoid conditional/hypothetical answers
+            if any(ci in text_out.lower() for ci in ["nếu", "giả sử", "if", "assuming"]):
+                return "Mình chưa tìm thấy thông tin phù hợp trong dữ liệu Thần số học."
+            return text_out
+
+        if isinstance(content, dict) and content.get("text"):
+            txt = content.get("text")
+            if any(p in txt.lower() for p in ["mình chưa tìm thấy", "không tìm thấy", "không có thông tin"]):
+                return "Mình chưa tìm thấy thông tin phù hợp trong dữ liệu Thần số học."
+            return txt
+
+        return "Mình chưa tìm thấy thông tin phù hợp trong dữ liệu Thần số học."
+
+    except requests.exceptions.RequestException as e:
+        print("Numerology AI request error:", e)
+        return "Mình chưa tìm thấy thông tin phù hợp trong dữ liệu Thần số học."
+    except Exception as e:
+        print("Numerology AI error:", e)
+        return "Mình chưa tìm thấy thông tin phù hợp trong dữ liệu Thần số học."
+def answer_with_gemini(text):
+    """Call Gemini generative API and return reply text.
+
+    - Resolve time-sensitive queries locally (today/tomorrow/yesterday).
+    - Recognize common holidays (e.g., Giáng sinh) and answer deterministically.
+    - Prepend a system note with the current date to ground the model for other queries.
+    - If the model returns a hypothetical/conditional answer ("nếu", "giả sử", "if"),
+      return the standard fallback: "AI không trả lời được, vui lòng thử lại sau."
+    """
+    if not GEMINI_API_KEY:
+        return "AI chưa được cấu hình. Vui lòng cấu hình GEMINI_API_KEY."
+
+    text = (text or "").strip()
+    lower = text.lower()
+    today = datetime.now()
+
+    # Local deterministic date handling
+    if any(p in lower for p in ["hôm nay", "ngày hôm nay", "hôm nay là ngày", "today is", "what's the date", "what date"]):
+        return today.strftime("%d/%m/%Y")
+
+    if any(p in lower for p in ["ngày mai", "mai", "tomorrow"]):
+        return (today + timedelta(days=1)).strftime("%d/%m/%Y")
+
+    if any(p in lower for p in ["hôm qua", "hôm trước", "yesterday"]):
+        return (today - timedelta(days=1)).strftime("%d/%m/%Y")
+
+    # Holiday mapping (deterministic answers)
+    holidays = {
+        "giáng sinh": (25, 12), "christmas": (25, 12),
+        "năm mới": (1, 1), "tết dương lịch": (1, 1), "new year": (1, 1)
+    }
+    for k, (day_num, month_num) in holidays.items():
+        if k in lower:
+            return f"{day_num:02d}/{month_num:02d}/{today.year}"
+
+    # Build payload with system note to ground model time
+    today_str = today.strftime("%d/%m/%Y")
+    system_note = (
+        f"[System note] Today's date is {today_str}. "
+        "When answering questions about dates, use this exact date and format DD/MM/YYYY."
+    )
+
+    try:
+        payload = {
+            "contents": [
+                {
+                    "parts": [
+                        {"text": system_note},
+                        {"text": text}
+                    ]
+                }
+            ],
+            "generationConfig": {
+                "temperature": 0.7,
+                "maxOutputTokens": 256
+            }
+        }
+
+        res = requests.post(
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
+            params={"key": GEMINI_API_KEY},
+            json=payload,
+            timeout=15
+        )
+        res.raise_for_status()
+        data = res.json()
+
+        candidates = data.get("candidates", [])
+        if not candidates:
+            return "AI không trả lời được, vui lòng thử lại sau."
+
+        content = candidates[0].get("content", {})
+        parts = content.get("parts", [])
+        if parts and isinstance(parts, list):
+            text_out = parts[-1].get("text", "").strip()
+            # reject conditional/hypothetical answers
+            lower_out = text_out.lower()
+            conditional_indicators = ["nếu", "giả sử", "if", "assuming"]
+            if any(ci in lower_out for ci in conditional_indicators):
+                return "AI không trả lời được, vui lòng thử lại sau."
+            if text_out:
+                return text_out
+
+        if isinstance(content, dict) and content.get("text"):
+            txt = content.get("text")
+            lower_txt = txt.lower()
+            if any(ci in lower_txt for ci in ["nếu", "giả sử", "if", "assuming"]):
+                return "AI không trả lời được, vui lòng thử lại sau."
+            return txt
+
+        return "AI không trả lời được, vui lòng thử lại sau."
+
+    except requests.exceptions.RequestException as e:
+        print("Gemini request error:", e)
+        return "AI không trả lời được, vui lòng thử lại sau."
+    except Exception as e:
+        print("Gemini error:", e)
+        return "AI không trả lời được, vui lòng thử lại sau."
 
 
 # =====================================================

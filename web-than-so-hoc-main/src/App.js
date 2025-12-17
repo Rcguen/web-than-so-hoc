@@ -43,6 +43,7 @@ import ShippingSelector from './components/ShippingSelector.jsx';
 import AdminDashboard from './admin/pages/AdminDashboard.jsx';
 import AdminUsers from './admin/pages/AdminUser.jsx';
 import NumerologyAI from './pages/NumerologyAI.jsx';
+import FloatingChat from './components/chatbot/FloatingChat.jsx';
 
 function App() {
   const location = useLocation(); // ⭐ Giờ đã OK vì Router nằm ở index.js
@@ -145,7 +146,7 @@ function App() {
 
 
         </Routes>
-
+        <FloatingChat />  
         <Footer />
       </>
     </CartProvider>
