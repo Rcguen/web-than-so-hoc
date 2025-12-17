@@ -10,8 +10,17 @@ import os
 from shop.order_routes import order_routes
 from shop.profile_routes import profile
 from shipping.shipping_routes import shipping_routes
-from ai_service import generate_numerology_interpretation
+from dotenv import load_dotenv
+# from ai_service import (
+#     generate_full_report,
+#     generate_summary
+# )
+from pdf_service import generate_numerology_pdf
+from pdf_loader import extract_text_from_pdf as read_pdf_text
+from mail_service import send_numerology_pdf
 
+# =====================================================
+load_dotenv()
 app = Flask(__name__)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -366,20 +375,7 @@ def get_numerology_details(result_id):
 
 
 
-@app.post("/api/ai/interpret")
-def ai_interpret():
-    data = request.get_json()
 
-    interpretation = generate_numerology_interpretation({
-        "life_path": data["life_path"],
-        "destiny": data["destiny"],
-        "soul": data["soul"],
-        "personality": data["personality"]
-    })
-
-    return jsonify({
-        "interpretation": interpretation
-    })
 
 @app.route("/api/admin/dashboard")
 def admin_dashboard():
@@ -504,6 +500,120 @@ def admin_toggle_user(user_id):
     conn.close()
 
     return jsonify({"message": "Đã cập nhật trạng thái user"})
+
+# ===================================================
+# AI SERVICE
+# ===================================================
+
+
+# @app.post("/api/ai/summary")
+# def ai_summary():
+#     data = request.json or {}
+
+#     name = data.get("name")
+#     birth_date = data.get("birth_date")
+#     numbers = data.get("numbers")
+
+#     if not name or not birth_date or not numbers:
+#         return jsonify({"error": "Thiếu dữ liệu"}), 400
+
+#     # Lấy kiến thức từ DB
+#     conn = get_db_connection()
+#     cur = conn.cursor(dictionary=True)
+
+#     query = """
+#         SELECT type, content
+#         FROM numerology_knowledge
+#         WHERE (number=%s AND type='life_path')
+#            OR (number=%s AND type='destiny')
+#            OR (number=%s AND type='soul')
+#            OR (number=%s AND type='personality')
+#     """
+#     cur.execute(query, (
+#         numbers["life_path"],
+#         numbers["destiny"],
+#         numbers["soul"],
+#         numbers["personality"]
+#     ))
+#     rows = cur.fetchall()
+#     cur.close()
+#     conn.close()
+
+#     knowledge_text = "\n".join([r["content"] for r in rows])
+
+#     text = generate_summary(
+#         name=name,
+#         birth_date=birth_date,
+#         numbers=numbers,
+#         knowledge=knowledge_text
+#     )
+
+#     return jsonify({"summary": text})
+
+
+# @app.post("/api/ai/full-report")
+# def ai_full_report():
+#     data = request.json or {}
+
+#     required = ["name", "birth_date", "numbers", "email"]
+#     if not all(k in data for k in required):
+#         return jsonify({"error": "Thiếu dữ liệu"}), 400
+
+#     ai_text = generate_full_report(
+#         name=data["name"],
+#         birth_date=data["birth_date"],
+#         numbers=data["numbers"]
+#     )
+
+#     pdf_path = generate_numerology_pdf(
+#         full_name=data["name"],
+#         birth_date=data["birth_date"],
+#         numbers=data["numbers"],
+#         ai_content=ai_text
+#     )
+
+#     send_numerology_pdf(
+#         to_email=data["email"],
+#         full_name=data["name"],
+#         pdf_path=pdf_path
+#     )
+
+#     return jsonify({
+#         "message": "Đã gửi báo cáo PDF",
+#         "pdf_path": pdf_path
+#     })
+
+
+@app.route("/api/knowledge", methods=["POST"])
+def get_knowledge():
+    data = request.json
+
+    life_path = data["life_path"]
+    destiny = data["destiny"]
+    soul = data["soul"]
+    personality = data["personality"]
+
+    conn = get_db_connection()
+    cur = conn.cursor(dictionary=True)
+
+    query = """
+        SELECT type, content
+        FROM numerology_knowledge
+        WHERE (number=%s AND type='life_path')
+           OR (number=%s AND type='destiny')
+           OR (number=%s AND type='soul')
+           OR (number=%s AND type='personality')
+    """
+
+    cur.execute(query, (life_path, destiny, soul, personality))
+    rows = cur.fetchall()
+
+    cur.close()
+    conn.close()
+
+    return jsonify({
+        "knowledge": rows
+    })
 
 
 # =====================================================

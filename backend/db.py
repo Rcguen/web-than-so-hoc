@@ -9,3 +9,5 @@ def get_db_connection():
         autocommit=False 
     )
     return connection
+
+

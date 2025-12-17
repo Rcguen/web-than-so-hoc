@@ -42,6 +42,7 @@ import MockPayment from './pages/payment/MockPayment.jsx';
 import ShippingSelector from './components/ShippingSelector.jsx';
 import AdminDashboard from './admin/pages/AdminDashboard.jsx';
 import AdminUsers from './admin/pages/AdminUser.jsx';
+import NumerologyAI from './pages/NumerologyAI.jsx';
 
 function App() {
   const location = useLocation(); // ⭐ Giờ đã OK vì Router nằm ở index.js
@@ -49,6 +50,7 @@ function App() {
 
   return (
     <CartProvider>
+      
       <>
         <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover /> 
         <Header />
@@ -107,7 +109,7 @@ function App() {
 />
           <Route path="/payment/mock/:orderId" element={<MockPayment />} />
           <Route path="/shipping-selector" element={<ShippingSelector />} />
-
+          <Route path="/numerology-ai" element={<NumerologyAI />} />
           <Route
   path="/admin"
   element={
