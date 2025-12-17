@@ -10,6 +10,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import cm
 from reportlab.lib.enums import TA_CENTER
 from reportlab.lib import colors
+from reportlab.lib.colors import HexColor
 
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
@@ -82,6 +83,7 @@ def generate_numerology_pdf(
 
     styles = getSampleStyleSheet()
 
+    
     styles.add(
         ParagraphStyle(
             name="TitleVN",

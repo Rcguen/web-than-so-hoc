@@ -188,23 +188,46 @@ Hãy viết bản phân tích ngắn gọn, dễ hiểu, bằng tiếng Việt (
 };
 
 
-  // const handleSendPDF = async () => {
-  //   if (!canSend) return alert("Nhập đủ Họ tên + Ngày sinh + Email trước đã em nhé.");
-  //   try {
-  //     setLoading(true);
-  //     const res = await sendFullReport(payload);
-  //     upsertHistory();
-  //     alert(`✅ ${res.data?.message || "Đã gửi báo cáo PDF"}\n${res.data?.pdf_path ? `PDF: ${res.data.pdf_path}` : ""}`);
-  //   } catch (err) {
-  //     showError(err);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
+const handleSendPDF = async () => {
+  if (!canSend) return alert("Nhập đủ Họ tên + Ngày sinh + Email trước đã em nhé.");
 
-  const handleSendPDF = async () => {
-  alert("Chức năng gửi PDF sẽ hoàn thiện sau.");
+  try {
+    setLoading(true);
+
+    const res = await fetch("http://localhost:5000/api/ai/full-report", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: form.name,
+        birth_date: form.birth_date,
+        email: form.email,
+        numbers,
+        summary,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.message || "Gửi PDF thất bại");
+    }
+
+    // Cập nhật lịch sử local
+    upsertHistory({});
+
+    alert(`📩 Báo cáo PDF đã được gửi về email của bạn!\n${data.pdf_path ? `PDF: ${data.pdf_path}` : ""}`);
+  } catch (err) {
+    console.error(err);
+    showError(err);
+  } finally {
+    setLoading(false);
+  }
 };
+
+
+//   const handleSendPDF = async () => {
+//   alert("Chức năng gửi PDF sẽ hoàn thiện sau.");
+// };
 
   return (
     <div style={{ maxWidth: 900, margin: "28px auto", fontFamily: "system-ui, Arial" }}>

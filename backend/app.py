@@ -11,13 +11,12 @@ from shop.order_routes import order_routes
 from shop.profile_routes import profile
 from shipping.shipping_routes import shipping_routes
 from dotenv import load_dotenv
-# from ai_service import (
-#     generate_full_report,
-#     generate_summary
-# )
-from pdf_service import generate_numerology_pdf
+
 from pdf_loader import extract_text_from_pdf as read_pdf_text
+
+from pdf_service import generate_numerology_pdf
 from mail_service import send_numerology_pdf
+from ai_service import generate_full_report
 
 # =====================================================
 load_dotenv()
@@ -551,37 +550,41 @@ def admin_toggle_user(user_id):
 #     return jsonify({"summary": text})
 
 
-# @app.post("/api/ai/full-report")
-# def ai_full_report():
-#     data = request.json or {}
+@app.post("/api/ai/full-report")
+def ai_full_report():
+    data = request.json
 
-#     required = ["name", "birth_date", "numbers", "email"]
-#     if not all(k in data for k in required):
-#         return jsonify({"error": "Thiếu dữ liệu"}), 400
+    name = data["name"]
+    birth_date = data["birth_date"]
+    email = data["email"]
+    numbers = data["numbers"]
 
-#     ai_text = generate_full_report(
-#         name=data["name"],
-#         birth_date=data["birth_date"],
-#         numbers=data["numbers"]
-#     )
+    # 1️⃣ Sinh nội dung phân tích (AI hoặc fallback)
+    ai_text = generate_full_report(
+        name=name,
+        birth_date=birth_date,
+        numbers=numbers
+    )
 
-#     pdf_path = generate_numerology_pdf(
-#         full_name=data["name"],
-#         birth_date=data["birth_date"],
-#         numbers=data["numbers"],
-#         ai_content=ai_text
-#     )
+    # 2️⃣ Tạo PDF
+    pdf_path = generate_numerology_pdf(
+        full_name=name,
+        birth_date=birth_date,
+        numbers=numbers,
+        ai_content=ai_text
+    )
 
-#     send_numerology_pdf(
-#         to_email=data["email"],
-#         full_name=data["name"],
-#         pdf_path=pdf_path
-#     )
+    # 3️⃣ Gửi mail
+    send_numerology_pdf(
+        to_email=email,
+        full_name=name,
+        pdf_path=pdf_path
+    )
 
-#     return jsonify({
-#         "message": "Đã gửi báo cáo PDF",
-#         "pdf_path": pdf_path
-#     })
+    return jsonify({
+        "message": "Đã gửi báo cáo PDF về email"
+    })
+
 
 
 @app.route("/api/knowledge", methods=["POST"])
