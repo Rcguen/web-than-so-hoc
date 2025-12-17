@@ -463,6 +463,36 @@ def admin_get_users():
     return jsonify({"users": users})
 
 
+@app.post("/api/support/message")
+def support_message():
+    """Accept a support message from the frontend and send an email to site admin."""
+    data = request.get_json() or {}
+    name = data.get("name", "Khách")
+    email = data.get("email")
+    message = data.get("message", "")
+
+    if not message.strip():
+        return jsonify({"error": "Thiếu message"}), 400
+
+    # Destination: use MAIL_FROM or MAIL_USER as admin inbox
+    to_addr = os.getenv("SUPPORT_EMAIL") or os.getenv("MAIL_FROM") or os.getenv("MAIL_USER")
+    if not to_addr:
+        return jsonify({"error": "Mail chưa được cấu hình"}), 500
+
+    try:
+        from mail_service import send_simple_mail
+
+        subject = f"[Hỗ trợ website] Tin nhắn từ {name}"
+        body = f"Tên: {name}\nEmail: {email or 'Không cung cấp'}\n\n{message}"
+
+        send_simple_mail(to_addr, subject, body)
+
+        return jsonify({"message": "Đã gửi thông điệp đến Admin."})
+
+    except Exception as e:
+        print("Support message error:", e)
+        return jsonify({"error": str(e)}), 500
+
 @app.put("/api/admin/users/<int:user_id>/role")
 def admin_update_user_role(user_id):
     data = request.get_json()

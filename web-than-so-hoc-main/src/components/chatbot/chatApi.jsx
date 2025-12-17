@@ -8,3 +8,12 @@ export async function sendChatMessage(message) {
   });
   return res.data.reply;
 }
+
+export async function sendAdminMessage({ name, email, message }) {
+  const res = await axios.post(`${API_BASE}/api/support/message`, {
+    name,
+    email,
+    message,
+  });
+  return res.data;
+}

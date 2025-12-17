@@ -74,3 +74,35 @@ def send_numerology_pdf(
             pass
 
     return True
+
+
+def send_simple_mail(to_email: str, subject: str, body: str) -> bool:
+    """Send a simple plaintext email."""
+    if not MAIL_HOST or not MAIL_USER or not MAIL_PASSWORD:
+        raise RuntimeError("Thiếu cấu hình email. Hãy set MAIL_HOST/MAIL_PORT/MAIL_USER/MAIL_PASSWORD trong .env")
+
+    msg = EmailMessage()
+    msg["Subject"] = subject
+    msg["From"] = MAIL_FROM
+    msg["To"] = to_email
+    msg.set_content(body)
+
+    if MAIL_PORT == 465:
+        server = smtplib.SMTP_SSL(MAIL_HOST, MAIL_PORT)
+    else:
+        server = smtplib.SMTP(MAIL_HOST, MAIL_PORT)
+
+    try:
+        server.ehlo()
+        if MAIL_PORT != 465 and MAIL_USE_TLS:
+            server.starttls()
+            server.ehlo()
+        server.login(MAIL_USER, MAIL_PASSWORD)
+        server.send_message(msg)
+    finally:
+        try:
+            server.quit()
+        except Exception:
+            pass
+
+    return True
