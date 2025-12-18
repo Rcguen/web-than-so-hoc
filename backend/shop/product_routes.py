@@ -336,7 +336,69 @@ def admin_toggle_product(product_id):
 
 
 # ====================================================
-#  📦 ĐƯỢC GỌI TỪ order_routes: TRỪ TỒN KHO
+#  � ADMIN: CẬP NHẬT SỐ LƯỢNG / TỒN KHO NHANH
+#  BODY: JSON { quantity: int, stock: int }
+#  Yêu cầu: Authorization: Bearer <admin-token>
+# ====================================================
+@product_routes.put("/admin/products/<int:product_id>/inventory")
+def admin_update_inventory(product_id):
+    # Require admin token
+    auth_header = request.headers.get("Authorization", "")
+    if not auth_header.startswith("Bearer "):
+        return jsonify({"message": "Unauthorized"}), 401
+
+    token = auth_header.split(" ", 1)[1].strip()
+    try:
+        import jwt
+        from auth import SECRET_KEY
+        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        user_id = payload.get("user_id")
+    except Exception as e:
+        print("admin_update_inventory auth error:", e)
+        return jsonify({"message": "Unauthorized"}), 401
+
+    data = request.get_json() or {}
+    try:
+        qty = int(data.get("quantity", 0))
+        stock = int(data.get("stock", 0))
+    except Exception:
+        return jsonify({"message": "Invalid numbers"}), 400
+
+    if qty < 0 or stock < 0:
+        return jsonify({"message": "Số lượng/tồn kho không được âm"}), 400
+    if stock > 0 and qty > stock:
+        return jsonify({"message": "Số lượng không được lớn hơn tồn kho"}), 400
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+        cur.execute("SELECT role FROM users WHERE user_id=%s", (user_id,))
+        r = cur.fetchone()
+        if not r or (r.get("role") or "").lower() != "admin":
+            cur.close(); conn.close()
+            return jsonify({"message": "Forbidden"}), 403
+
+        cur2 = conn.cursor()
+        cur2.execute(
+            "UPDATE products SET quantity=%s, stock=%s WHERE product_id=%s",
+            (qty, stock, product_id)
+        )
+        conn.commit()
+        cur2.close(); cur.close(); conn.close()
+
+        return jsonify({"message": "Inventory updated", "quantity": qty, "stock": stock})
+
+    except Exception as e:
+        print("admin_update_inventory error:", e)
+        try:
+            cur.close(); conn.close()
+        except:
+            pass
+        return jsonify({"error": str(e)}), 500
+
+
+# ====================================================
+#  �📦 ĐƯỢC GỌI TỪ order_routes: TRỪ TỒN KHO
 #   - chỉ trừ quantity (số lượng đang bán trên web)
 # ====================================================
 def reduce_stock(product_id, qty):

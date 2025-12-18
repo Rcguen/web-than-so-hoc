@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, redirect
 from flask_cors import CORS
 import requests
 from db import get_db_connection
@@ -8,10 +8,13 @@ from shop.product_routes import product_routes
 from shop.category_routes import category_routes
 from flask import send_from_directory
 import os
+import hmac
+import hashlib
 from shop.order_routes import order_routes
 from shop.profile_routes import profile
 from shipping.shipping_routes import shipping_routes
 from dotenv import load_dotenv
+from vnpay_service import create_vnpay_url
 
 from pdf_loader import extract_text_from_pdf as read_pdf_text
 
@@ -1363,6 +1366,86 @@ def api_me():
     except Exception as e:
         print('api_me error', e)
         return jsonify({'message':'Unauthorized'}), 401
+# ====================================================
+#   VNPAY PAYMENT CALLBACK
+# ===================================================
+import urllib.parse
+
+
+
+@app.post("/api/vnpay/create-payment")
+def create_payment():
+    data = request.json
+
+    payment_url = create_vnpay_url(
+        order_id=data["orderId"],
+        amount=data["amount"],
+        ip_addr=request.remote_addr,
+        tmn_code=os.getenv("VNP_TMN_CODE"),
+        hash_secret=os.getenv("VNP_HASH_SECRET"),
+        return_url=os.getenv("VNP_RETURN_URL"),
+        pay_url=os.getenv("VNP_PAY_URL"),
+    )
+
+    return jsonify({"paymentUrl": payment_url})
+
+
+@app.get("/api/vnpay/return")
+def vnpay_return():
+    params = request.args.to_dict()
+    # remove secure hash params before verification
+    received_hash = params.pop("vnp_SecureHash", None)
+    params.pop("vnp_SecureHashType", None)
+
+    # Build the query string exactly like `create_vnpay_url` used (sorted + urlencode)
+    sorted_params = sorted(params.items())
+    query_string = urllib.parse.urlencode(sorted_params)
+
+    calculated_hash = hmac.new(
+        os.getenv("VNP_HASH_SECRET").encode(),
+        query_string.encode(),
+        hashlib.sha512
+    ).hexdigest()
+
+    print("vnpay_return params:", params)
+    print("calculated_hash:", calculated_hash)
+    print("received_hash:", received_hash)
+
+    frontend = os.getenv("FRONTEND_URL", "http://localhost:3000")
+
+    # Compare case-insensitive (some providers return upper-case hex)
+    if not received_hash or calculated_hash.lower() != received_hash.lower():
+        print("vnpay_return: hash mismatch -> fail")
+        return redirect(f"{frontend}/payment-fail")
+
+    # check response code
+    if params.get("vnp_ResponseCode") == "00":
+        # ✅ THANH TOÁN THÀNH CÔNG — update order in DB
+        try:
+            order_ref = params.get("vnp_TxnRef")
+            txn_no = params.get("vnp_TransactionNo")
+            # vnp_Amount is integer (amount*100)
+            amount = int(params.get("vnp_Amount", 0))
+            paid_amount = amount / 100.0
+
+            conn = get_db_connection()
+            cur = conn.cursor()
+            cur.execute("""
+                UPDATE orders
+                SET payment_status='PAID', transaction_id=%s
+                WHERE order_id=%s
+            """, (txn_no or None, order_ref))
+            conn.commit()
+            cur.close(); conn.close()
+            print(f"vnpay_return: order {order_ref} marked as PAID, txn={txn_no}, amount={paid_amount}")
+        except Exception as e:
+            print("vnpay_return DB update error:", e)
+
+        return redirect(f"{frontend}/payment-success")
+    else:
+        print("vnpay_return: vnp_ResponseCode != 00 -> fail", params.get("vnp_ResponseCode"))
+        return redirect(f"{frontend}/payment-fail")
+
 
 # =====================================================
 # 🚀 MAIN ENTRY

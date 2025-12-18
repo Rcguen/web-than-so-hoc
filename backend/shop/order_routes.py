@@ -95,17 +95,46 @@ def create_order():
 
         order_id = cur.lastrowid
 
-        # ---------- 6️⃣ INSERT ORDER ITEMS ----------
+        # ---------- 6️⃣ INSERT ORDER ITEMS & REDUCE QUANTITY ATOMICALLY ----------
         for it in items:
+            product_id = it.get("product_id")
+            qty = int(it.get("qty", 0))
+            price = float(it.get("price", 0))
+
+            # Attempt to decrement available quantity atomically
+            cur.execute("""
+                UPDATE products
+                SET quantity = quantity - %s
+                WHERE product_id = %s AND quantity >= %s
+            """, (qty, product_id, qty))
+
+            if cur.rowcount == 0:
+                # Rollback and return informative message
+                cur.execute("SELECT product_name, quantity, stock FROM products WHERE product_id=%s", (product_id,))
+                prod = cur.fetchone()
+                conn.rollback()
+                cur.close(); conn.close()
+                prod_name = prod.get("product_name") if prod else str(product_id)
+                return jsonify({"message": f"Không đủ số lượng tồn kho cho sản phẩm {prod_name}"}), 400
+
+            # Insert order item
             cur.execute("""
                 INSERT INTO order_items (order_id, product_id, quantity, price)
                 VALUES (%s,%s,%s,%s)
             """, (
                 order_id,
-                it.get("product_id"),
-                int(it.get("qty", 0)),
-                float(it.get("price", 0))
+                product_id,
+                qty,
+                price
             ))
+
+            # After decrement, if both quantity and stock are zero, hide the product
+            cur.execute("SELECT quantity, stock FROM products WHERE product_id=%s", (product_id,))
+            pr = cur.fetchone()
+            q = pr.get("quantity", 0) if pr else 0
+            s = pr.get("stock", 0) if pr else 0
+            if q <= 0 and s <= 0:
+                cur.execute("UPDATE products SET is_active=0 WHERE product_id=%s", (product_id,))
 
         conn.commit()
         cur.close()
@@ -181,30 +210,127 @@ def admin_get_orders():
 
 
 # ====================================================
+# 4b. ADMIN – CHI TIẾT ĐƠN HÀNG (ADMIN)
+@order_routes.get("/admin/orders/<int:order_id>")
+def admin_get_order_detail(order_id):
+    # Require admin token
+    auth_header = request.headers.get("Authorization", "")
+    if not auth_header.startswith("Bearer "):
+        return jsonify({"message": "Unauthorized"}), 401
+
+    token = auth_header.split(" ", 1)[1].strip()
+    try:
+        import jwt
+        from auth import SECRET_KEY
+        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        user_id = payload.get("user_id")
+    except Exception as e:
+        print("admin_get_order_detail auth error:", e)
+        return jsonify({"message": "Unauthorized"}), 401
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+        cur.execute("SELECT role FROM users WHERE user_id=%s", (user_id,))
+        r = cur.fetchone()
+        if not r or (r.get("role") or "").lower() != "admin":
+            cur.close(); conn.close()
+            return jsonify({"message": "Forbidden"}), 403
+
+        print(f"admin_get_order_detail: user_id={user_id} is admin; fetching order {order_id}")
+
+        # 1️⃣ Lấy thông tin đơn
+        cur.execute("""
+            SELECT *
+            FROM orders
+            WHERE order_id=%s
+            LIMIT 1
+        """, (order_id,))
+
+        order = cur.fetchone()
+        if not order:
+            cur.close(); conn.close()
+            return jsonify({"message": "Order not found"}), 404
+
+        # 2️⃣ Lấy danh sách sản phẩm trong đơn (với trường image)
+        cur.execute("""
+            SELECT oi.order_item_id, oi.product_id, oi.quantity, oi.price,
+                   p.product_name,
+                   COALESCE(p.image_url, '') AS image
+            FROM order_items oi
+            JOIN products p ON oi.product_id = p.product_id
+            WHERE oi.order_id=%s
+        """, (order_id,))
+
+        items = cur.fetchall()
+
+        cur.close(); conn.close()
+        return jsonify({"order": order, "items": items})
+
+    except Exception as e:
+        print("admin_get_order_detail error:", e)
+        try:
+            cur.close(); conn.close()
+        except:
+            pass
+        return jsonify({"error": str(e)}), 500
+
+
+# ====================================================
 # 4. ADMIN – CẬP NHẬT TRẠNG THÁI ĐƠN
 # ====================================================
 @order_routes.put("/admin/orders/<int:order_id>/status")
 def update_order_status(order_id):
+    # Require admin token
+    auth_header = request.headers.get("Authorization", "")
+    if not auth_header.startswith("Bearer "):
+        return jsonify({"message": "Unauthorized"}), 401
+
+    token = auth_header.split(" ", 1)[1].strip()
+    try:
+        import jwt
+        from auth import SECRET_KEY
+        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        user_id = payload.get("user_id")
+    except Exception as e:
+        print("update_order_status auth error:", e)
+        return jsonify({"message": "Unauthorized"}), 401
+
     data = request.get_json() or {}
     new_status = data.get("status")
 
     if new_status not in ["pending", "processing", "shipping", "completed"]:
         return jsonify({"error": "Invalid status"}), 400
 
-    conn = get_db_connection()
-    cur = conn.cursor()
+    # check role
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+        cur.execute("SELECT role FROM users WHERE user_id=%s", (user_id,))
+        r = cur.fetchone()
+        if not r or (r.get("role") or "").lower() != "admin":
+            cur.close(); conn.close()
+            return jsonify({"message": "Forbidden"}), 403
 
-    cur.execute("""
-        UPDATE orders
-        SET order_status=%s
-        WHERE order_id=%s
-    """, (new_status, order_id))
+        cur2 = conn.cursor()
+        cur2.execute("""
+            UPDATE orders
+            SET order_status=%s
+            WHERE order_id=%s
+        """, (new_status, order_id))
 
-    conn.commit()
-    cur.close()
-    conn.close()
+        conn.commit()
+        cur2.close(); cur.close(); conn.close()
 
-    return jsonify({"message": "updated"})
+        return jsonify({"message": "updated"})
+
+    except Exception as e:
+        print("update_order_status error:", e)
+        try:
+            cur.close(); conn.close()
+        except:
+            pass
+        return jsonify({"error": str(e)}), 500
 
 
 # ====================================================
