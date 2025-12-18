@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from "react";
 import "./Cart.css";
 import { Link } from "react-router-dom";
+import Swal from "sweetalert2";
+import { toast } from "react-toastify";
+import { useAuth } from "../../context/AuthContext";
 
 function Cart() {
   const [cart, setCart] = useState([]);
@@ -10,9 +13,16 @@ function Cart() {
     setCart(saved);
   }, []);
 
+  // 👉 Hàm đồng bộ cart + thông báo lên Header
+  const syncCart = (newCart) => {
+    setCart(newCart);
+    localStorage.setItem("cart", JSON.stringify(newCart));
+    window.dispatchEvent(new Event("cartUpdated")); // 🔥 quan trọng!
+  };
+
   // 👉 Cập nhật số lượng sản phẩm
   const updateQty = (product_id, type) => {
-    const newCart = cart.map(item => {
+    const newCart = cart.map((item) => {
       if (item.product_id === product_id) {
         let newQty = item.qty;
 
@@ -24,15 +34,13 @@ function Cart() {
       return item;
     });
 
-    setCart(newCart);
-    localStorage.setItem("cart", JSON.stringify(newCart));
+    syncCart(newCart);
   };
 
   // 👉 Xóa sản phẩm
   const removeItem = (product_id) => {
-    const newCart = cart.filter(item => item.product_id !== product_id);
-    setCart(newCart);
-    localStorage.setItem("cart", JSON.stringify(newCart));
+    const newCart = cart.filter((item) => item.product_id !== product_id);
+    syncCart(newCart);
   };
 
   // 👉 Tính tổng tiền
@@ -49,19 +57,26 @@ function Cart() {
 
       {cart.map((item) => (
         <div className="cart-item" key={item.product_id}>
-          <img src={`http://127.0.0.1:5000${item.image_url}`} alt={item.name} />
+          <img
+            src={`http://127.0.0.1:5000${item.image_url}`}
+            alt={item.product_name}
+          />
 
           <div className="cart-info">
-            <h2>{item.product_name || item.name}</h2>
+            <h2>{item.product_name}</h2>
             <p className="cart-price">
               {Number(item.price).toLocaleString()} đ
             </p>
 
             {/* Nút tăng giảm */}
             <div className="qty-box">
-              <button onClick={() => updateQty(item.product_id, "minus")}>-</button>
+              <button onClick={() => updateQty(item.product_id, "minus")}>
+                -
+              </button>
               <span>{item.qty}</span>
-              <button onClick={() => updateQty(item.product_id, "plus")}>+</button>
+              <button onClick={() => updateQty(item.product_id, "plus")}>
+                +
+              </button>
             </div>
           </div>
 
@@ -70,11 +85,18 @@ function Cart() {
             {(item.price * item.qty).toLocaleString()} đ
           </p>
 
-          <button className="remove-btn" onClick={() => removeItem(item.product_id)}>
+          <button
+            className="remove-btn"
+            onClick={() => removeItem(item.product_id)}
+          >
             Xóa
           </button>
         </div>
       ))}
+
+      <Link to="/shop">
+  <button className="btn-back">⬅ Quay lại cửa hàng</button>
+</Link>
 
       {/* TỔNG TIỀN */}
       <div className="cart-total-box">

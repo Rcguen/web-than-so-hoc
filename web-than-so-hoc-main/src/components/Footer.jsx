@@ -6,7 +6,7 @@ function Footer() {
       <div className="container">
         <div className="col-lg-12">
           {/* ĐÃ SỬA LỖI DỨT ĐIỂM Ở ĐÂY */}
-          <p>Copyright © 2036 <a href="/" onClick={(e) => e.preventDefault()}></a>. All rights reserved.
+          <p>Copyright © 2025 <a href="/" onClick={(e) => e.preventDefault()}></a>. All rights reserved.
           
           </p>
         </div>

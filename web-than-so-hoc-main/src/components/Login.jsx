@@ -1,11 +1,17 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { toast } from "react-toastify";
+
+
 
 function Login() {
   const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");
   const [error, setError]       = useState("");
   const navigate = useNavigate();
+  const { login } = useAuth();
+
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -21,9 +27,22 @@ function Login() {
         setError(data.message || "Đăng nhập thất bại");
         return;
       }
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify(data.user));
-      navigate("/");
+      // localStorage.setItem("token", data.token);
+      // localStorage.setItem("user", JSON.stringify(data.user));
+      // sau khi login thành công
+      login(data.user, data.token);
+
+      // ✅ Toast thành công
+      toast.success(`👋 Xin chào ${data.user.full_name}!`);
+
+      if (data.user.role === "admin") {
+        navigate("/admin");
+      } else {
+        navigate("/");
+      }
+
+      toast.error(data.message || "❌ Đăng nhập thất bại");
+
     } catch {
       setError("Lỗi kết nối server!");
     }

@@ -1,88 +1,138 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-function HistoryLookup() {
-  const [history, setHistory] = useState([]);
-  const [selectedMeaning, setSelectedMeaning] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const user = JSON.parse(localStorage.getItem("user") || "null");
+export default function HistoryLookup() {
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (!user) return;
-
-    fetch(`http://127.0.0.1:5000/api/numerology/history/${user.user_id}`)
-      .then((res) => res.json())
-      .then((data) => setHistory(data))
-      .catch((err) => console.error("Lỗi tải lịch sử:", err));
-  }, [user]);
-
-  const viewMeaning = async (lifePath) => {
-    setLoading(true);
+  // ✅ Lấy user 1 lần duy nhất
+  const [user] = useState(() => {
     try {
-      const res = await fetch(
-        `http://127.0.0.1:5000/api/numerology/meaning/${lifePath}`
-      );
-      const data = await res.json();
-      setSelectedMeaning(data);
-    } catch (err) {
-      console.error("Lỗi tải ý nghĩa:", err);
+      return JSON.parse(localStorage.getItem("user"));
+    } catch {
+      return null;
     }
-    setLoading(false);
+  });
+
+  const [history, setHistory] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  // ================= FETCH HISTORY =================
+  useEffect(() => {
+    if (!user?.user_id) {
+      setError("Bạn chưa đăng nhập");
+      setLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    async function fetchHistory() {
+      try {
+        setLoading(true);
+
+        const res = await fetch(
+          `http://127.0.0.1:5000/api/numerology/history/${user.user_id}`
+        );
+        const data = await res.json();
+
+        if (!cancelled) {
+          setHistory(Array.isArray(data) ? data : []);
+        }
+      } catch (err) {
+        if (!cancelled) setError("Không tải được lịch sử tra cứu");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    fetchHistory();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.user_id]);
+
+  // ================= PHÂN TÍCH LẠI =================
+  const handleAnalyzeAgain = (item) => {
+    navigate("/report", {
+      state: {
+        name: item.name,
+        birth_date: item.birth_date,
+        email: user.email,
+        numbers: {
+          life_path: item.life_path_number,
+          destiny: item.destiny_number,
+          soul: item.soul_number,
+          personality: 0, // DB chưa có → set tạm
+        },
+      },
+    });
   };
 
-  const closeModal = () => setSelectedMeaning(null);
+  // ================= UI =================
+  if (loading) {
+    return <p style={{ padding: 20 }}>⏳ Đang tải lịch sử...</p>;
+  }
 
-  if (!user) {
+  if (error) {
     return (
-      <p style={{ textAlign: "center", marginTop: "80px", color: "#555" }}>
-        ⚠️ Vui lòng đăng nhập để xem lịch sử tra cứu.
+      <p style={{ padding: 20, color: "red" }}>
+        ❌ {error}
       </p>
     );
   }
 
-  return (
-    <div style={{ padding: "80px 20px", textAlign: "center" }}>
-      <h2 style={{ color: "#5b03e4" }}>📜 Lịch sử tra cứu của bạn</h2>
+  if (history.length === 0) {
+    return <p style={{ padding: 20 }}>📭 Chưa có lịch sử tra cứu</p>;
+  }
 
-      {history.length === 0 ? (
-        <p style={{ marginTop: "30px" }}>Chưa có lịch sử tra cứu nào.</p>
-      ) : (
-        <table
+  return (
+    <div style={{ maxWidth: 900, margin: "30px auto" }}>
+      <h2>🗂️ Lịch sử tra cứu Thần số học</h2>
+
+      {history.map((item) => (
+        <div
+          key={item.result_id}
           style={{
-            width: "85%",
-            margin: "20px auto",
-            borderCollapse: "collapse",
-            backgroundColor: "#fff",
-            borderRadius: "10px",
-            overflow: "hidden",
-            boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
+            border: "1px solid #ddd",
+            borderRadius: 12,
+            padding: 16,
+            marginBottom: 12,
+            background: "#fff",
           }}
         >
-          <thead>
-            <tr style={{ backgroundColor: "#5b03e4", color: "white" }}>
-              <th>Họ Tên</th>
-              <th>Ngày Sinh</th>
-              <th>Life Path</th>
-              <th>Destiny</th>
-              <th>Soul</th>
-              <th>Ngày Tra Cứu</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {history.map((item, index) => (
-              <tr key={index} style={{ borderBottom: "1px solid #eee" }}>
-                <td>{item.name}</td>
-                <td>{item.birth_date}</td>
-                <td style={{ color: "#5b03e4", fontWeight: "bold" }}>
-                  {item.life_path_number}
-                </td>
-                <td>{item.destiny_number}</td>
-                <td>{item.soul_number}</td>
-                <td>{new Date(item.created_at).toLocaleString()}</td>
-                <td>
-                  <button
+          <h4 style={{ margin: 0 }}>{item.name}</h4>
+
+          <p style={{ margin: "6px 0", color: "#555" }}>
+            📅 Ngày sinh: {item.birth_date}
+          </p>
+
+          <p style={{ margin: "6px 0" }}>
+            🔢 Life Path: <b>{item.life_path_number}</b> | Destiny:{" "}
+            <b>{item.destiny_number}</b> | Soul:{" "}
+            <b>{item.soul_number}</b>
+          </p>
+
+          <p style={{ fontSize: 13, color: "#888" }}>
+            ⏱ {item.created_at}
+          </p>
+
+          <button
+            onClick={() => handleAnalyzeAgain(item)}
+            style={{
+              marginTop: 8,
+              padding: "8px 14px",
+              borderRadius: 8,
+              border: "1px solid #ccc",
+              cursor: "pointer",
+              background: "#f6f6f6",
+            }}
+          >
+            🔁 Phân tích lại bằng AI
+          </button>
+
+          <button
   onClick={() => navigate(`/details/${item.result_id}`)}
   style={{
     backgroundColor: "#5b03e4",
@@ -95,68 +145,8 @@ function HistoryLookup() {
 >
   Xem chi tiết
 </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-
-      {/* Popup hiển thị ý nghĩa */}
-      {selectedMeaning && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-            backgroundColor: "rgba(0,0,0,0.6)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 9999,
-            animation: "fadeIn 0.3s ease-in-out",
-          }}
-        >
-          <div
-            style={{
-              background: "#fff",
-              padding: "30px",
-              borderRadius: "12px",
-              width: "60%",
-              textAlign: "center",
-              boxShadow: "0 0 20px rgba(0,0,0,0.2)",
-              animation: "fadeInUp 0.5s ease",
-            }}
-          >
-            <h2 style={{ color: "#5b03e4" }}>
-              🌟 Con số chủ đạo: {selectedMeaning.number}
-            </h2>
-            <h3>{selectedMeaning.title}</h3>
-            <p style={{ marginTop: "10px" }}>{selectedMeaning.description}</p>
-
-            <button
-              onClick={closeModal}
-              style={{
-                marginTop: "20px",
-                backgroundColor: "#5b03e4",
-                color: "#fff",
-                padding: "10px 25px",
-                borderRadius: "8px",
-                border: "none",
-                cursor: "pointer",
-              }}
-            >
-              Đóng
-            </button>
-          </div>
         </div>
-      )}
-
-      {loading && <p>⏳ Đang tải dữ liệu...</p>}
+      ))}
     </div>
   );
 }
-
-export default HistoryLookup;

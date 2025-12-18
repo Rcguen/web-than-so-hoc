@@ -1,169 +1,217 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
+import "./Page.css";
+import { Link, useNavigate } from "react-router-dom";
+import Swal from "sweetalert2";
+import { toast } from "react-toastify";
+import { useAuth } from "../../context/AuthContext";
+import { useCart } from "../../context/CartContext";
+import ShippingSelector from "../../components/ShippingSelector";
 
 function Checkout() {
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
+  const cartCtx = useCart?.() || {};
+  const cartItemsFromCtx = cartCtx.cartItems || cartCtx.cart || [];
+  const clearCartFromCtx = cartCtx.clearCart;
+
   const [cart, setCart] = useState([]);
-  const [customer, setCustomer] = useState({
-    fullname: "",
-    phone: "",
-    address: "",
-    notes: ""
+  const [form, setForm] = useState({
+    customer_name: "",
+    customer_phone: "",
+    customer_address: "",
+    note: "",
   });
 
+  // ✅ state shipping (MỨC 2)
+  const [shipping, setShipping] = useState({
+    city: "",
+    district: "",
+    ward: "",
+    shipping_fee: 0,
+  });
+
+  // load cart
   useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem("cart") || "[]");
-    setCart(saved);
-  }, []);
+    if (Array.isArray(cartItemsFromCtx)) {
+      setCart(cartItemsFromCtx);
+    } else {
+      const saved = JSON.parse(localStorage.getItem("cart") || "[]");
+      setCart(saved);
+    }
+  }, [cartItemsFromCtx]);
 
-  const totalPrice = cart.reduce(
-    (sum, item) => sum + Number(item.price) * Number(item.qty),
-    0
-  );
+ const subtotal = cart.reduce((sum, item) => {
+  const qty = Number(item.qty ?? item.quantity ?? 0);
+  const price = Number(item.price ?? 0);
+  return sum + price * qty;
+}, 0);
 
-  const handleInput = (e) => {
-    const { name, value } = e.target;
-    setCustomer((prev) => ({ ...prev, [name]: value }));
-  };
+const ship = Number(shipping.shipping_fee ?? 0);
+const total = subtotal + ship;
 
-  const submitOrder = async () => {
-    if (!customer.fullname || !customer.phone || !customer.address) {
-      alert("Vui lòng nhập đầy đủ thông tin nhận hàng");
+
+  const handlePlaceOrder = async () => {
+    if (!cart.length) {
+      toast.warning("🛒 Giỏ hàng trống!");
       return;
     }
 
-    if (cart.length === 0) {
-      alert("Giỏ hàng trống");
+    if (
+      !form.customer_name.trim() ||
+      !form.customer_phone.trim() ||
+      !form.customer_address.trim()
+    ) {
+      toast.warning("⚠️ Vui lòng nhập đầy đủ thông tin người nhận");
       return;
     }
+
+    if (!shipping.city || !shipping.district || !shipping.ward) {
+      toast.warning("📍 Vui lòng chọn đầy đủ Tỉnh / Quận / Phường");
+      return;
+    }
+
+    const confirm = await Swal.fire({
+      title: "Xác nhận đặt hàng?",
+      text: "Bạn có chắc chắn muốn đặt đơn hàng này không?",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Đặt hàng",
+      cancelButtonText: "Hủy",
+    });
+
+    if (!confirm.isConfirmed) return;
+
+    const loadingToast = toast.loading("⏳ Đang xử lý đơn hàng...");
 
     try {
+      const payload = {
+        user_id: user?.user_id || null,
+        ...form,
+        items: cart,
+
+        // 🔑 gửi địa chỉ để backend tính ship
+        city: shipping.city,
+        district: shipping.district,
+        ward: shipping.ward,
+      };
+
+      const token = localStorage.getItem("token");
+
       const res = await fetch("http://127.0.0.1:5000/api/orders", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          customer,
-          cart
-        })
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(payload),
       });
+
+      if (res.status === 401) {
+        toast.update(loadingToast, {
+          render: "⚠️ Phiên đăng nhập đã hết hạn!",
+          type: "error",
+          isLoading: false,
+          autoClose: 3000,
+        });
+        logout();
+        return;
+      }
 
       const data = await res.json();
 
-      if (!res.ok || data.status !== "success") {
-        throw new Error(data.message || "Đặt hàng thất bại");
+      if (!res.ok) {
+        toast.update(loadingToast, {
+          render: data.message || "❌ Đặt hàng thất bại",
+          type: "error",
+          isLoading: false,
+          autoClose: 3000,
+        });
+        return;
       }
 
-      alert(`Đặt hàng thành công! Mã đơn: #${data.order_id}`);
-
-      // Clear cart
-      localStorage.removeItem("cart");
-      setCart([]);
-      setCustomer({
-        fullname: "",
-        phone: "",
-        address: "",
-        notes: ""
+      toast.update(loadingToast, {
+        render: "🎉 Đặt hàng thành công!",
+        type: "success",
+        isLoading: false,
+        autoClose: 2000,
       });
+
+      if (typeof clearCartFromCtx === "function") {
+        clearCartFromCtx();
+      } else {
+        localStorage.removeItem("cart");
+        window.dispatchEvent(new Event("cartUpdated"));
+        setCart([]);
+      }
+
+      navigate("/thank-you");
     } catch (err) {
       console.error(err);
-      alert("Có lỗi xảy ra khi gửi đơn hàng, vui lòng thử lại.");
+      toast.update(loadingToast, {
+        render: "❌ Lỗi kết nối server",
+        type: "error",
+        isLoading: false,
+        autoClose: 3000,
+      });
     }
   };
 
   return (
-    <div
-      style={{
-        padding: "40px 20px",
-        background: "#f3ecff",
-        minHeight: "100vh"
-      }}
-    >
-      <h1 style={{ textAlign: "center", marginBottom: "20px" }}>
-        Thanh toán đơn hàng
-      </h1>
+    <div className="checkout-container">
+      <Link to="/cart" className="btn-back-cart">
+        ⬅ Quay lại giỏ hàng
+      </Link>
 
-      <div style={{ maxWidth: "600px", margin: "30px auto" }}>
-        <h3>Thông tin nhận hàng</h3>
+      <h1>Thanh toán</h1>
 
+      {/* 🔽 CHỌN ĐỊA CHỈ + PREVIEW SHIP */}
+      <ShippingSelector onChange={setShipping} />
+
+      <div className="checkout-form">
         <input
-          className="checkout-input"
+          type="text"
           placeholder="Họ và tên"
-          name="fullname"
-          value={customer.fullname}
-          onChange={handleInput}
+          value={form.customer_name}
+          onChange={(e) =>
+            setForm({ ...form, customer_name: e.target.value })
+          }
         />
 
         <input
-          className="checkout-input"
+          type="text"
           placeholder="Số điện thoại"
-          name="phone"
-          value={customer.phone}
-          onChange={handleInput}
+          value={form.customer_phone}
+          onChange={(e) =>
+            setForm({ ...form, customer_phone: e.target.value })
+          }
         />
 
         <input
-          className="checkout-input"
-          placeholder="Địa chỉ nhận hàng"
-          name="address"
-          value={customer.address}
-          onChange={handleInput}
+          type="text"
+          placeholder="Địa chỉ chi tiết"
+          value={form.customer_address}
+          onChange={(e) =>
+            setForm({ ...form, customer_address: e.target.value })
+          }
         />
 
         <textarea
-          className="checkout-input"
-          placeholder="Ghi chú thêm"
-          name="notes"
-          value={customer.notes}
-          onChange={handleInput}
+          placeholder="Ghi chú"
+          value={form.note}
+          onChange={(e) => setForm({ ...form, note: e.target.value })}
         />
 
-        <h3 style={{ marginTop: "30px" }}>Sản phẩm</h3>
-        {cart.map((item, i) => (
-          <div
-            key={i}
-            style={{
-              padding: "15px",
-              background: "#fff",
-              marginBottom: "10px",
-              borderRadius: "8px",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
-            }}
-          >
-            <div>
-              <strong>{item.product_name || item.name}</strong>
-              <p>
-                {item.qty} × {Number(item.price).toLocaleString()} đ
-              </p>
-            </div>
-            <strong style={{ color: "#5b03e4" }}>
-              {(Number(item.price) * Number(item.qty)).toLocaleString()} đ
-            </strong>
-          </div>
-        ))}
+        {/* 💰 TỔNG TIỀN */}
+        <div className="checkout-summary">
+          <p>Tạm tính: {subtotal.toLocaleString("vi-VN")} đ</p>
+<p>Phí vận chuyển: {ship.toLocaleString("vi-VN")} đ</p>
+<hr />
+<h2>Tổng cộng: {total.toLocaleString("vi-VN")} đ</h2>
 
-        <h2 style={{ textAlign: "center", marginTop: "20px" }}>
-          Tổng cộng:{" "}
-          <span style={{ color: "#5b03e4" }}>
-            {totalPrice.toLocaleString()} đ
-          </span>
-        </h2>
+        </div>
 
-        <button
-          onClick={submitOrder}
-          style={{
-            width: "100%",
-            marginTop: "20px",
-            padding: "15px",
-            background: "#5b03e4",
-            color: "#fff",
-            border: "none",
-            borderRadius: "8px",
-            fontSize: "18px",
-            cursor: "pointer"
-          }}
-        >
-          Xác nhận thanh toán
+        <button className="checkout-btn" onClick={handlePlaceOrder}>
+          Xác nhận đặt hàng
         </button>
       </div>
     </div>

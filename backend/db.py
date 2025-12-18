@@ -5,6 +5,9 @@ def get_db_connection():
         host="localhost",
         user="root",
         password="",  # nếu em có mật khẩu thì điền ở đây
-        database="thansohoc_db"
+        database="thansohoc_db",
+        autocommit=False 
     )
     return connection
+
+
