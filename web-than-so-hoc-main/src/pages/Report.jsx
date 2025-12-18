@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 //import { getSummary, sendFullReport } from "../components/api/aiApi.jsx";
 import { calcAllNumbers } from "../utils/numerology";
@@ -230,21 +230,23 @@ const handleSendPDF = async () => {
 // };
 
   return (
-    <div style={{ maxWidth: 900, margin: "28px auto", fontFamily: "system-ui, Arial" }}>
-      <h2 style={{ marginBottom: 6 }}>📄 Báo cáo tổng hợp Thần số học</h2>
-      <div style={{ color: "#666", marginBottom: 16 }}>
+    <div style={{ maxWidth: 900, margin: "28px auto", fontFamily: "system-ui, Arial", padding: "0 20px" }}>
+      <h2 style={{ marginBottom: 6, fontSize: "28px", fontWeight: "800", color: "#333", textAlign: "center" }}>
+        📄 Báo cáo tổng hợp <span style={{color: "#7a00ff"}}>Thần số học</span>
+      </h2>
+      <div style={{ color: "#666", marginBottom: 30, textAlign: "center", fontSize: "16px" }}>
         Nhập <b>Họ tên</b> + <b>Ngày sinh</b> → hệ thống tự tính chỉ số → AI tóm tắt / gửi PDF.
       </div>
 
       {/* Lịch sử */}
-      <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 14 }}>
-        <label style={{ minWidth: 120 }}>🗂️ Lịch sử tra cứu</label>
+      <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 20, background: "#fff", padding: "15px", borderRadius: "12px", boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }}>
+        <label style={{ minWidth: 120, fontWeight: "600", color: "#444" }}>🗂️ Lịch sử:</label>
         <select
           value={selectedId}
           onChange={(e) => onPickHistory(e.target.value)}
-          style={{ flex: 1, padding: 10, borderRadius: 10, border: "1px solid #ddd" }}
+          style={{ flex: 1, padding: "10px", borderRadius: "8px", border: "1px solid #ddd", outline: "none" }}
         >
-          <option value="">-- Chọn lịch sử --</option>
+          <option value="">-- Chọn hồ sơ cũ --</option>
           {history.map((h) => (
             <option key={h.id} value={h.id}>
               {h.name} — {h.birth_date}
@@ -257,100 +259,133 @@ const handleSendPDF = async () => {
             setForm({ name: "", birth_date: "", email: "" });
             setSummary("");
           }}
-          style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid #ddd", background: "#fff" }}
+          style={{ padding: "10px 18px", borderRadius: "8px", border: "1px solid #7a00ff", background: "#fff", color: "#7a00ff", cursor: "pointer", fontWeight: "600" }}
         >
-          Tạo mới
+          + Tạo mới
         </button>
       </div>
 
       {/* Form */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, background: "#fff", padding: "25px", borderRadius: "16px", boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }}>
         <div>
-          <div style={{ marginBottom: 6 }}>Họ tên</div>
+          <div style={{ marginBottom: 8, fontWeight: "600", color: "#444" }}>Họ và Tên</div>
           <input
             name="name"
             value={form.name}
             onChange={onChange}
             placeholder="Ví dụ: Nguyễn Văn A"
-            style={{ width: "100%", padding: 12, borderRadius: 12, border: "1px solid #ddd" }}
+            style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid #ddd", outline: "none", transition: "0.3s" }}
+            onFocus={(e) => e.target.style.borderColor = "#7a00ff"}
+            onBlur={(e) => e.target.style.borderColor = "#ddd"}
           />
         </div>
 
         <div>
-          <div style={{ marginBottom: 6 }}>Ngày sinh</div>
+          <div style={{ marginBottom: 8, fontWeight: "600", color: "#444" }}>Ngày sinh (Dương lịch)</div>
           <input
             name="birth_date"
             type="date"
             value={form.birth_date}
             onChange={onChange}
-            style={{ width: "100%", padding: 12, borderRadius: 12, border: "1px solid #ddd" }}
+            style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid #ddd", outline: "none", transition: "0.3s" }}
+            onFocus={(e) => e.target.style.borderColor = "#7a00ff"}
+            onBlur={(e) => e.target.style.borderColor = "#ddd"}
           />
         </div>
 
         <div style={{ gridColumn: "1 / span 2" }}>
-          <div style={{ marginBottom: 6 }}>Email nhận PDF</div>
+          <div style={{ marginBottom: 8, fontWeight: "600", color: "#444" }}>Email nhận báo cáo (PDF)</div>
           <input
             name="email"
             value={form.email}
             onChange={onChange}
             placeholder="example@gmail.com"
-            style={{ width: "100%", padding: 12, borderRadius: 12, border: "1px solid #ddd" }}
+            style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid #ddd", outline: "none", transition: "0.3s" }}
+            onFocus={(e) => e.target.style.borderColor = "#7a00ff"}
+            onBlur={(e) => e.target.style.borderColor = "#ddd"}
           />
         </div>
       </div>
 
       {/* Numbers (readonly) */}
-      <div style={{ marginTop: 18, padding: 16, border: "1px solid #eee", borderRadius: 16, background: "#fafafa" }}>
-        <div style={{ fontWeight: 700, marginBottom: 10 }}>🔢 Chỉ số (tự động tính)</div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          <NumberBox label="Life Path" value={numbers.life_path} />
-          <NumberBox label="Destiny" value={numbers.destiny} />
-          <NumberBox label="Soul" value={numbers.soul} />
-          <NumberBox label="Personality" value={numbers.personality} />
+      <div style={{ marginTop: 30 }}>
+        <h3 style={{ fontWeight: 800, marginBottom: 15, color: "#333", fontSize: "20px" }}>🔢 Các Chỉ Số Quan Trọng</h3>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 20 }}>
+          <NumberBox label="Số Chủ Đạo" value={numbers.life_path} />
+          <NumberBox label="Số Vận Mệnh" value={numbers.destiny} />
+          <NumberBox label="Số Linh Hồn" value={numbers.soul} />
+          <NumberBox label="Số Nhân Cách" value={numbers.personality} />
         </div>
       </div>
 
       {/* Actions */}
-      <div style={{ display: "flex", gap: 10, marginTop: 14, alignItems: "center" }}>
+      <div style={{ display: "flex", gap: 15, marginTop: 30, justifyContent: "center" }}>
         <button
           onClick={handleSummary}
           disabled={loading || !canRun}
           style={{
-            padding: "12px 16px",
-            borderRadius: 12,
-            border: "1px solid #ddd",
-            background: loading || !canRun ? "#f2f2f2" : "#fff",
+            padding: "14px 24px",
+            borderRadius: "50px",
+            border: "none",
+            background: loading || !canRun ? "#ccc" : "linear-gradient(to right, #7a00ff, #aa00ff)",
+            color: "#fff",
+            fontSize: "16px",
+            fontWeight: "700",
             cursor: loading || !canRun ? "not-allowed" : "pointer",
+            boxShadow: "0 4px 15px rgba(122, 0, 255, 0.3)",
+            transition: "transform 0.2s"
           }}
+          onMouseEnter={(e) => !loading && canRun && (e.target.style.transform = "translateY(-2px)")}
+          onMouseLeave={(e) => (e.target.style.transform = "translateY(0)")}
         >
-          📌 Xem tóm tắt
+          {loading ? "Đang xử lý..." : "🔮 Xem Luận Giải AI"}
         </button>
 
         <button
           onClick={handleSendPDF}
           disabled={loading || !canSend}
           style={{
-            padding: "12px 16px",
-            borderRadius: 12,
-            border: "1px solid #ddd",
-            background: loading || !canSend ? "#f2f2f2" : "#fff",
+            padding: "14px 24px",
+            borderRadius: "50px",
+            border: "2px solid #7a00ff",
+            background: "#fff",
+            color: "#7a00ff",
+            fontSize: "16px",
+            fontWeight: "700",
             cursor: loading || !canSend ? "not-allowed" : "pointer",
+            transition: "all 0.2s"
           }}
+          onMouseEnter={(e) => !loading && canSend && (e.target.style.background = "#f3e8ff")}
+          onMouseLeave={(e) => (e.target.style.background = "#fff")}
         >
-          📧 Gửi báo cáo PDF
+          📧 Gửi Báo Cáo PDF
         </button>
-
-        {loading && <span style={{ color: "#666" }}>⏳ AI đang xử lý…</span>}
       </div>
 
       {/* Summary */}
-      <div style={{ marginTop: 18 }}>
-        <div style={{ fontWeight: 700, marginBottom: 8 }}>✨ Kết quả tóm tắt</div>
-        <div style={{ padding: 14, border: "1px solid #eee", borderRadius: 16, minHeight: 120 }}>
+      <div style={{ marginTop: 30, marginBottom: 50 }}>
+        <div style={{ fontWeight: 800, marginBottom: 15, fontSize: "20px", color: "#333" }}>✨ Kết Quả Luận Giải</div>
+        <div style={{ 
+          padding: "30px", 
+          border: "1px solid #eee", 
+          borderRadius: "20px", 
+          minHeight: 150, 
+          background: "#fff", 
+          boxShadow: "0 10px 40px rgba(0,0,0,0.05)",
+          lineHeight: "1.8",
+          fontSize: "16px",
+          color: "#444"
+        }}>
           {summary ? (
-            <pre style={{ whiteSpace: "pre-wrap", margin: 0, fontFamily: "inherit" }}>{summary}</pre>
+            <div style={{ whiteSpace: "pre-wrap" }}>
+                {/* Có thể dùng Markdown renderer nếu muốn đẹp hơn */}
+                {summary}
+            </div>
           ) : (
-            <span style={{ color: "#888" }}>Chưa có nội dung. Bấm “Xem tóm tắt” để tạo.</span>
+            <div style={{ textAlign: "center", color: "#999", padding: "20px" }}>
+              <div style={{fontSize: "40px", marginBottom: "10px"}}>🤖</div>
+              Chưa có dữ liệu phân tích. <br/>Hãy nhập thông tin và bấm <b>"Xem Luận Giải AI"</b> để bắt đầu.
+            </div>
           )}
         </div>
       </div>
@@ -358,13 +393,55 @@ const handleSendPDF = async () => {
   );
 }
 
+// Thay thế component NumberBox ở cuối file bằng code này:
 function NumberBox({ label, value }) {
   return (
-    <div style={{ padding: 12, borderRadius: 14, border: "1px solid #e8e8e8", background: "#fff" }}>
-      <div style={{ color: "#666", fontSize: 13 }}>{label}</div>
-      <div style={{ fontSize: 22, fontWeight: 800, marginTop: 4 }}>{value || "—"}</div>
+    <div style={{
+      padding: "20px",
+      borderRadius: "16px",
+      background: "#fff",
+      boxShadow: "0 4px 15px rgba(0,0,0,0.05)",
+      border: "1px solid rgba(122, 0, 255, 0.1)",
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "center",
+      textAlign: "center",
+      transition: "transform 0.2s ease, box-shadow 0.2s ease",
+      cursor: "default"
+    }}
+    onMouseEnter={(e) => {
+      e.currentTarget.style.transform = "translateY(-5px)";
+      e.currentTarget.style.boxShadow = "0 8px 25px rgba(122, 0, 255, 0.15)";
+      e.currentTarget.style.borderColor = "#7a00ff";
+    }}
+    onMouseLeave={(e) => {
+      e.currentTarget.style.transform = "translateY(0)";
+      e.currentTarget.style.boxShadow = "0 4px 15px rgba(0,0,0,0.05)";
+      e.currentTarget.style.borderColor = "rgba(122, 0, 255, 0.1)";
+    }}
+    >
+      <div style={{
+        color: "#666",
+        fontSize: "14px",
+        fontWeight: "600",
+        textTransform: "uppercase",
+        letterSpacing: "0.5px",
+        marginBottom: "8px"
+      }}>
+        {label}
+      </div>
+      <div style={{
+        fontSize: "32px",
+        fontWeight: "800",
+        color: "#7a00ff", // Màu tím chủ đạo
+        background: "-webkit-linear-gradient(45deg, #7a00ff, #aa00ff)",
+        WebkitBackgroundClip: "text",
+        WebkitTextFillColor: "transparent",
+        lineHeight: "1"
+      }}>
+        {value || "—"}
+      </div>
     </div>
   );
 }
-
-
