@@ -465,13 +465,13 @@ def admin_get_users():
 
 @app.post("/api/support/message")
 def support_message():
-    """Accept a support message from the frontend and send an email to site admin."""
+    """Accept a support message from the frontend, save it to DB and send an email to site admin."""
     data = request.get_json() or {}
-    name = data.get("name", "Khách")
-    email = data.get("email")
-    message = data.get("message", "")
+    # name & email are automatic from authenticated user; frontend does not need to send them
+    message = (data.get("message") or "").strip()
+    user_id = data.get("user_id")  # optional if frontend passes it
 
-    if not message.strip():
+    if not message:
         return jsonify({"error": "Thiếu message"}), 400
 
     # Destination: use MAIL_FROM or MAIL_USER as admin inbox
@@ -480,17 +480,82 @@ def support_message():
         return jsonify({"error": "Mail chưa được cấu hình"}), 500
 
     try:
+        # If Authorization present, prefer the authenticated user id over client-supplied user_id
+        auth_header = request.headers.get('Authorization', '')
+        user_name = 'Khách'
+        user_email = None
+        if auth_header.startswith('Bearer '):
+            token = auth_header.split(' ', 1)[1].strip()
+            try:
+                import jwt
+                from auth import SECRET_KEY
+                payload = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
+                user_id = payload.get('user_id')
+                # fetch user info
+                tmp_conn = get_db_connection()
+                tmp_cur = tmp_conn.cursor(dictionary=True)
+                tmp_cur.execute("SELECT full_name, email FROM users WHERE user_id=%s", (user_id,))
+                urow = tmp_cur.fetchone()
+                try:
+                    tmp_cur.close(); tmp_conn.close()
+                except:
+                    pass
+                if urow:
+                    user_name = urow.get('full_name') or 'Khách'
+                    user_email = urow.get('email')
+            except Exception:
+                # ignore token errors, keep client-supplied user_id
+                pass
+
+        import secrets
+        owner_secret = secrets.token_hex(16)
+
+        # Try to insert with owner_secret; if the column doesn't exist, add it and retry
+        conn = get_db_connection()
+        cur = conn.cursor()
+        try:
+            cur.execute(
+                "INSERT INTO admin_messages (user_id, user_name, message, owner_secret, status, created_at) VALUES (%s,%s,%s,%s,'new',NOW())",
+                (user_id, user_name, message, owner_secret)
+            )
+        except Exception as ins_e:
+            msg = str(ins_e)
+            if "Unknown column" in msg or "1054" in msg:
+                print("support_message: owner_secret column missing, attempting to add it to the table")
+                try:
+                    cur.execute("ALTER TABLE admin_messages ADD COLUMN owner_secret VARCHAR(64) NULL")
+                    conn.commit()
+                    cur.execute(
+                        "INSERT INTO admin_messages (user_id, user_name, message, owner_secret, status, created_at) VALUES (%s,%s,%s,%s,'new',NOW())",
+                        (user_id, user_name, message, owner_secret)
+                    )
+                except Exception as add_e:
+                    print("support_message: failed to add owner_secret column", add_e)
+                    cur.close(); conn.close()
+                    return jsonify({"error": str(add_e)}), 500
+            else:
+                cur.close(); conn.close()
+                return jsonify({"error": str(ins_e)}), 500
+
+        inserted_id = cur.lastrowid
+        conn.commit()
+        cur.close(); conn.close()
+
+        print(f"support_message: inserted id={inserted_id} owner_secret={owner_secret} user_id={user_id}")
+
         from mail_service import send_simple_mail
-
-        subject = f"[Hỗ trợ website] Tin nhắn từ {name}"
-        body = f"Tên: {name}\nEmail: {email or 'Không cung cấp'}\n\n{message}"
-
+        subject = f"[Hỗ trợ website] Tin nhắn từ {user_name}"
+        body = f"Tên: {user_name}\nEmail: {user_email or 'Không cung cấp'}\n\n{message}\n\nID tin nhắn: {inserted_id}\nOwner token: {owner_secret}"
         send_simple_mail(to_addr, subject, body)
 
-        return jsonify({"message": "Đã gửi thông điệp đến Admin."})
+        return jsonify({"message": "Đã gửi thông điệp đến Admin.", "id": inserted_id, "owner_secret": owner_secret})
 
     except Exception as e:
         print("Support message error:", e)
+        try:
+            cur.close(); conn.close()
+        except:
+            pass
         return jsonify({"error": str(e)}), 500
 
 @app.put("/api/admin/users/<int:user_id>/role")
@@ -520,6 +585,92 @@ def admin_toggle_user(user_id):
     conn = get_db_connection()
     cur = conn.cursor()
 
+
+@app.get('/api/support/message/<int:msg_id>')
+def get_support_message(msg_id):
+    """Retrieve a support message by id.
+
+    Access rules:
+    - If message has user_id set, the requester must present a valid token with same user_id or admin
+    - Otherwise, the requester can present the owner_secret query param received when creating the message
+    """
+
+    access_token = (request.args.get('access_token') or '').strip() or None
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+        cur.execute("SELECT * FROM admin_messages WHERE id=%s", (msg_id,))
+        row = cur.fetchone()
+        cur.close(); conn.close()
+
+        if not row:
+            return jsonify({"message": "Not found"}), 404
+
+        # if access_token provided and matches owner_secret, allow
+        if access_token and row.get('owner_secret') and access_token == row.get('owner_secret'):
+            # do not leak owner_secret back
+            filtered = {k: v for k, v in row.items() if k != 'owner_secret'}
+            return jsonify(filtered)
+
+        # if row has user_id, check token matches or allow admin
+        if row.get('user_id'):
+            auth_header = request.headers.get('Authorization','')
+            if not auth_header.startswith('Bearer '):
+                return jsonify({'message':'Unauthorized'}), 401
+            token = auth_header.split(' ',1)[1].strip()
+            try:
+                import jwt
+                from auth import SECRET_KEY
+                payload = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
+                requester_id = payload.get('user_id')
+                if requester_id == row.get('user_id'):
+                    filtered = {k: v for k, v in row.items() if k != 'owner_secret'}
+                    return jsonify(filtered)
+                # if requester is admin, allow
+                conn = get_db_connection()
+                cur = conn.cursor(dictionary=True)
+                cur.execute("SELECT role FROM users WHERE user_id=%s", (requester_id,))
+                r = cur.fetchone()
+                cur.close(); conn.close()
+                if r and (r.get('role') or '').lower() == 'admin':
+                    filtered = {k: v for k, v in row.items() if k != 'owner_secret'}
+                    return jsonify(filtered)
+                return jsonify({'message':'Forbidden'}), 403
+            except Exception as e:
+                print('get_support_message auth error', e)
+                return jsonify({'message':'Unauthorized'}), 401
+
+        # anonymous message: only admin can fetch
+        auth_header = request.headers.get('Authorization','')
+        if not auth_header.startswith('Bearer '):
+            return jsonify({'message':'Unauthorized'}), 401
+        token = auth_header.split(' ',1)[1].strip()
+        try:
+            import jwt
+            from auth import SECRET_KEY
+            payload = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
+            requester_id = payload.get('user_id')
+            conn = get_db_connection()
+            cur = conn.cursor(dictionary=True)
+            cur.execute("SELECT role FROM users WHERE user_id=%s", (requester_id,))
+            r = cur.fetchone()
+            cur.close(); conn.close()
+            if r and (r.get('role') or '').lower() == 'admin':
+                filtered = {k: v for k, v in row.items() if k != 'owner_secret'}
+                return jsonify(filtered)
+            return jsonify({'message':'Forbidden'}), 403
+        except Exception as e:
+            print('get_support_message auth error', e)
+            return jsonify({'message':'Unauthorized'}), 401
+
+    except Exception as e:
+        print('get_support_message error', e)
+        try:
+            cur.close(); conn.close()
+        except:
+            pass
+        return jsonify({'error':str(e)}), 500
     cur.execute("""
         UPDATE users
         SET is_active = NOT is_active
@@ -964,6 +1115,254 @@ def answer_with_gemini(text):
         print("Gemini error:", e)
         return "AI không trả lời được, vui lòng thử lại sau."
 
+#======================================================
+# ADMIN CHAT
+#======================================================
+
+@app.post("/api/admin-chat")
+def send_admin_chat():
+    """Create a support/admin message from a user.
+
+    Expected JSON: { user_id: int|null, name: str, message: str }
+    """
+    data = request.json or {}
+    name = data.get("name")
+    message = (data.get("message") or "").strip()
+    user_id = data.get("user_id")
+
+    if not message:
+        return jsonify({"error": "Thiếu message"}), 400
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute(
+            "INSERT INTO admin_messages (user_id, user_name, message, status, created_at) VALUES (%s,%s,%s,'new',NOW())",
+            (user_id, name, message)
+        )
+        inserted_id = cur.lastrowid
+        conn.commit()
+        cur.close(); conn.close()
+
+        return jsonify({"success": True, "id": inserted_id}), 201
+
+    except Exception as e:
+        print("send_admin_chat error:", e)
+        try:
+            cur.close()
+            conn.close()
+        except:
+            pass
+        return jsonify({"error": str(e)}), 500
+
+
+@app.get("/api/admin-chat")
+def get_admin_chat():
+    """List admin messages. Requires admin role.
+
+    Query params:
+    - status: 'new' | 'replied' | 'all' (default 'all')
+    - limit: int
+    """
+    # Authenticate and authorize
+    auth_header = request.headers.get("Authorization", "")
+    if not auth_header.startswith("Bearer "):
+        return jsonify({"message": "Unauthorized"}), 401
+
+    token = auth_header.split(" ", 1)[1].strip()
+    try:
+        import jwt
+        from auth import SECRET_KEY
+        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        user_id = payload.get("user_id")
+        print("get_admin_chat auth success: user_id=", user_id)
+    except jwt.ExpiredSignatureError:
+        print("get_admin_chat auth error: token expired")
+        return jsonify({"message": "Token expired"}), 401
+    except jwt.InvalidTokenError as e:
+        print("get_admin_chat auth error: invalid token", e)
+        return jsonify({"message": "Invalid token"}), 401
+    except Exception as e:
+        print("get_admin_chat auth error:", e)
+        return jsonify({"message": "Unauthorized"}), 401
+
+    # check role
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+        cur.execute("SELECT role FROM users WHERE user_id=%s", (user_id,))
+        row = cur.fetchone()
+        if not row or (row.get("role") or "").lower() != "admin":
+            cur.close(); conn.close()
+            return jsonify({"message": "Forbidden"}), 403
+    except Exception as e:
+        print("get_admin_chat auth error:", e)
+        try:
+            cur.close(); conn.close()
+        except:
+            pass
+        return jsonify({"message": "Unauthorized"}), 401
+
+    status = request.args.get("status", "all")
+    try:
+        limit = int(request.args.get("limit", 100))
+    except:
+        limit = 100
+
+    try:
+        if status == "new":
+            cur.execute("SELECT * FROM admin_messages WHERE status <> 'replied' ORDER BY created_at DESC LIMIT %s", (limit,))
+        elif status == "replied":
+            cur.execute("SELECT * FROM admin_messages WHERE status = 'replied' ORDER BY created_at DESC LIMIT %s", (limit,))
+        else:
+            cur.execute("SELECT * FROM admin_messages ORDER BY created_at DESC LIMIT %s", (limit,))
+
+        rows = cur.fetchall()
+        # Debug logging: print number of rows and a sample for troubleshooting
+        try:
+            print(f"get_admin_chat: returning {len(rows)} rows")
+            if len(rows) > 0:
+                sample = rows[0]
+                # print keys only to avoid binary data dumps
+                print("get_admin_chat sample keys:", list(sample.keys()))
+        except Exception as dbg_e:
+            print("get_admin_chat debug print error:", dbg_e)
+
+        cur.close(); conn.close()
+        return jsonify(rows)
+
+    except Exception as e:
+        print("get_admin_chat error:", e)
+        try:
+            cur.close(); conn.close()
+        except:
+            pass
+        return jsonify({"error": str(e)}), 500
+
+
+@app.post("/api/admin-chat/reply")
+def reply_admin_chat():
+    """Admin replies to a message. Expected JSON: { id: int, reply: str }
+
+    Requires Authorization: Bearer <token> (admin role)
+    """
+    auth_header = request.headers.get("Authorization", "")
+    if not auth_header.startswith("Bearer "):
+        return jsonify({"message": "Unauthorized"}), 401
+
+    token = auth_header.split(" ", 1)[0].strip()
+    token = auth_header.split(" ", 1)[1].strip() if " " in auth_header else token
+    try:
+        import jwt
+        from auth import SECRET_KEY
+        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        user_id = payload.get("user_id")
+        print("reply_admin_chat auth success: user_id=", user_id)
+    except jwt.ExpiredSignatureError:
+        print("reply_admin_chat auth error: token expired")
+        return jsonify({"message": "Token expired"}), 401
+    except jwt.InvalidTokenError as e:
+        print("reply_admin_chat auth error: invalid token", e)
+        return jsonify({"message": "Invalid token"}), 401
+    except Exception as e:
+        print("reply_admin_chat auth error:", e)
+        return jsonify({"message": "Unauthorized"}), 401
+
+    data = request.json or {}
+    msg_id = data.get("id")
+    reply_text = (data.get("reply") or "").strip()
+
+    if not msg_id or not reply_text:
+        return jsonify({"error": "Thiếu id hoặc reply"}), 400
+
+    # check admin role
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+        cur.execute("SELECT role FROM users WHERE user_id=%s", (user_id,))
+        row = cur.fetchone()
+        if not row or (row.get("role") or "").lower() != "admin":
+            cur.close(); conn.close()
+            return jsonify({"message": "Forbidden"}), 403
+
+        # fetch message to get recipient email/user_id
+        cur.execute("SELECT * FROM admin_messages WHERE id=%s", (msg_id,))
+        msg_row = cur.fetchone()
+
+        # perform reply
+        cur2 = conn.cursor()
+        try:
+            cur2.execute(
+                "UPDATE admin_messages SET reply=%s, status='replied', replied_by=%s, replied_at=NOW() WHERE id=%s",
+                (reply_text, user_id, msg_id)
+            )
+            conn.commit()
+            print("reply_admin_chat: updated with replied_by/replied_at")
+        except Exception as upd_e:
+            msg = str(upd_e)
+            if "Unknown column" in msg or "1054" in msg:
+                try:
+                    print("reply_admin_chat: replied_by/replied_at columns missing, using fallback update")
+                    cur2.execute(
+                        "UPDATE admin_messages SET reply=%s, status='replied' WHERE id=%s",
+                        (reply_text, msg_id)
+                    )
+                    conn.commit()
+                except Exception as fallback_e:
+                    print("reply_admin_chat: fallback update failed", fallback_e)
+                    cur2.close(); cur.close(); conn.close()
+                    return jsonify({"error": str(fallback_e)}), 500
+            else:
+                print("reply_admin_chat: update error", upd_e)
+                cur2.close(); cur.close(); conn.close()
+                return jsonify({"error": str(upd_e)}), 500
+
+
+
+        cur2.close(); cur.close(); conn.close()
+
+        return jsonify({"success": True})
+
+    except Exception as e:
+        print("reply_admin_chat error:", e)
+        try:
+            cur.close(); conn.close()
+        except:
+            pass
+        return jsonify({"error": str(e)}), 500
+
+
+@app.get('/api/me')
+def api_me():
+    """Return user info from JWT token. Returns 401 on invalid/expired token."""
+    auth_header = request.headers.get('Authorization','')
+    if not auth_header.startswith('Bearer '):
+        return jsonify({'message':'Unauthorized'}), 401
+    token = auth_header.split(' ',1)[1].strip()
+    try:
+        import jwt
+        from auth import SECRET_KEY
+        payload = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
+        user_id = payload.get('user_id')
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+        cur.execute('SELECT user_id, full_name, email, role FROM users WHERE user_id=%s', (user_id,))
+        row = cur.fetchone()
+        cur.close(); conn.close()
+        if not row:
+            return jsonify({'message':'Unauthorized'}), 401
+        # normalize role
+        row['role'] = (row.get('role') or '').lower()
+        return jsonify({'user': row})
+    except jwt.ExpiredSignatureError:
+        print('api_me: token expired')
+        return jsonify({'message':'Token expired'}), 401
+    except jwt.InvalidTokenError as e:
+        print('api_me: invalid token', e)
+        return jsonify({'message':'Invalid token'}), 401
+    except Exception as e:
+        print('api_me error', e)
+        return jsonify({'message':'Unauthorized'}), 401
 
 # =====================================================
 # 🚀 MAIN ENTRY

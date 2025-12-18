@@ -9,11 +9,18 @@ export async function sendChatMessage(message) {
   return res.data.reply;
 }
 
-export async function sendAdminMessage({ name, email, message }) {
+export async function sendAdminMessage({ message, user_id }, token) {
+  const headers = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
   const res = await axios.post(`${API_BASE}/api/support/message`, {
-    name,
-    email,
     message,
-  });
+    user_id,
+  }, headers);
+  return res.data;
+}
+
+export async function getSupportMessage(id, token, accessToken) {
+  const headers = token ? { headers: { Authorization: `Bearer ${token}` } } : undefined;
+  const url = `${API_BASE}/api/support/message/${id}${accessToken ? `?access_token=${encodeURIComponent(accessToken)}` : ''}`;
+  const res = await axios.get(url, headers);
   return res.data;
 }

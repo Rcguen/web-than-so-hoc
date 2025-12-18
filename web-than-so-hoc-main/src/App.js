@@ -42,8 +42,10 @@ import MockPayment from './pages/payment/MockPayment.jsx';
 import ShippingSelector from './components/ShippingSelector.jsx';
 import AdminDashboard from './admin/pages/AdminDashboard.jsx';
 import AdminUsers from './admin/pages/AdminUser.jsx';
+import AdminMessages from './admin/pages/AdminMessages.jsx';
 import NumerologyAI from './pages/NumerologyAI.jsx';
 import FloatingChat from './components/chatbot/FloatingChat.jsx';
+
 
 function App() {
   const location = useLocation(); // ⭐ Giờ đã OK vì Router nằm ở index.js
@@ -140,6 +142,7 @@ function App() {
   <Route path="categories/:id" element={<AdminCategoryDetail />} />
 
   <Route path="users" element={<AdminUsers />} />
+  <Route path="messages" element={<AdminMessages />} />
 
 </Route>
 

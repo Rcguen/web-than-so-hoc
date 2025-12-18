@@ -15,8 +15,9 @@ export default function AdminSidebar() {
   <NavLink to="/admin/categories" className={({ isActive }) => (isActive ? "active" : "")}>
     📂 Danh mục
   </NavLink>
-</li>
-      </ul>
+</li>        <li>
+          <NavLink to="/admin/messages">💬 Tin nhắn</NavLink>
+        </li>      </ul>
     </div>
   );
 }
