@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import "./Lookup.css";
 import LifePinnacleSection from "./LifePinnacleSection";
 import LifePinnaclePyramid from "./LifePinnaclePyramid";
@@ -12,6 +12,8 @@ function Lookup() {
   const [chartResp, setChartResp] = useState(null);
   const [arrowPopup, setArrowPopup] = useState(null); // popup mũi tên mạnh/yếu
   const [hasResult, setHasResult] = useState(false);
+  const resultRef = useRef(null);
+
 
 
   const handleSubmit = async (e) => {
@@ -33,6 +35,11 @@ function Lookup() {
       const data = await res.json();
       setResult(data);
       setHasResult(true);
+
+      setTimeout(() => {
+  resultRef.current?.scrollIntoView({ behavior: "smooth" });
+}, 300);
+
 
       // Gửi yêu cầu lấy Biểu đồ sinh mệnh + Mũi tên
       const chartRes = await fetch("http://127.0.0.1:5000/api/numerology/birth-chart", {
@@ -102,7 +109,7 @@ function Lookup() {
 
       {/* Hiển thị kết quả 6 chỉ số */}
       {result && (
-        <div className="lookup-result">
+        <div className="lookup-result" ref={resultRef}>
           <h2>Kết quả của bạn</h2>
           <div className="result-cards">
             <div className="result-card" onClick={() => handleViewMeaning("life_path", result.lifePath)}>

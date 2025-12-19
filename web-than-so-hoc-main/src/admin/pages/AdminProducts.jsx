@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
+import { toast } from "react-toastify";
 import "./admin.css";
 
 export default function AdminProducts() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState({}); // { product_id: true }
+  const [editVals, setEditVals] = useState({}); // { product_id: { quantity, stock } }
 
   const loadProducts = async () => {
     try {
@@ -16,7 +19,7 @@ export default function AdminProducts() {
       setProducts(data);
     } catch (err) {
       console.error(err);
-      alert("Không thể tải danh sách sản phẩm!");
+      toast.error("Không thể tải danh sách sản phẩm!");
     } finally {
       setLoading(false);
     }
@@ -32,9 +35,59 @@ export default function AdminProducts() {
         `http://127.0.0.1:5000/api/admin/products/${product_id}/toggle`
       );
       loadProducts();
+      toast.success("Đã thay đổi trạng thái");
     } catch (err) {
       console.error(err);
-      alert("Không thể thay đổi trạng thái!");
+      toast.error("Không thể thay đổi trạng thái!");
+    }
+  };
+
+  const startEdit = (p) => {
+    setEditing((s) => ({ ...s, [p.product_id]: true }));
+    setEditVals((s) => ({ ...s, [p.product_id]: { quantity: p.quantity ?? 0, stock: p.stock ?? 0 } }));
+  };
+
+  const cancelEdit = (product_id) => {
+    setEditing((s) => ({ ...s, [product_id]: false }));
+    setEditVals((s) => {
+      const ns = { ...s };
+      delete ns[product_id];
+      return ns;
+    });
+  };
+
+  const onChangeVal = (product_id, field, value) => {
+    setEditVals((s) => ({ ...s, [product_id]: { ...(s[product_id] || {}), [field]: value } }));
+  };
+
+  const saveInventory = async (product_id) => {
+    const vals = editVals[product_id];
+    if (!vals) return;
+    const qty = parseInt(vals.quantity || 0, 10);
+    const stock = parseInt(vals.stock || 0, 10);
+
+    if (isNaN(qty) || isNaN(stock) || qty < 0 || stock < 0) {
+      toast.error("Số lượng/tồn kho phải là số nguyên không âm");
+      return;
+    }
+    if (stock > 0 && qty > stock) {
+      toast.error("Số lượng không được lớn hơn tồn kho");
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("token");
+      await axios.put(
+        `http://127.0.0.1:5000/api/admin/products/${product_id}/inventory`,
+        { quantity: qty, stock },
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+      );
+      toast.success("Cập nhật thành công");
+      cancelEdit(product_id);
+      loadProducts();
+    } catch (err) {
+      console.error(err);
+      toast.error(err?.response?.data?.message || "Cập nhật thất bại");
     }
   };
 
@@ -104,16 +157,46 @@ export default function AdminProducts() {
                 </button>
               </td>
 
-              <td>{p.quantity}</td>
-              <td>{p.stock}</td>
+              <td>
+                {editing[p.product_id] ? (
+                  <input
+                    type="number"
+                    min={0}
+                    value={editVals[p.product_id]?.quantity ?? 0}
+                    onChange={(e) => onChangeVal(p.product_id, "quantity", e.target.value)}
+                    className="small-input"
+                  />
+                ) : (
+                  p.quantity
+                )}
+              </td>
 
               <td>
-                <Link
-                  className="btn-edit"
-                  to={`/admin/products/${p.product_id}`}
-                >
-                  Sửa
-                </Link>
+                {editing[p.product_id] ? (
+                  <input
+                    type="number"
+                    min={0}
+                    value={editVals[p.product_id]?.stock ?? 0}
+                    onChange={(e) => onChangeVal(p.product_id, "stock", e.target.value)}
+                    className="small-input"
+                  />
+                ) : (
+                  p.stock
+                )}
+              </td>
+
+              <td>
+                {editing[p.product_id] ? (
+                  <>
+                    <button className="btn-save" onClick={() => saveInventory(p.product_id)}>Lưu</button>
+                    <button className="btn-cancel" onClick={() => cancelEdit(p.product_id)}>Hủy</button>
+                  </>
+                ) : (
+                  <>
+                    <button className="btn-edit" onClick={() => startEdit(p)}>Sửa số lượng</button>
+                    <Link className="btn-edit" to={`/admin/products/${p.product_id}`}>Sửa</Link>
+                  </>
+                )}
               </td>
             </tr>
           ))}

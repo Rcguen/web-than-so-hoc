@@ -12,6 +12,16 @@ export function CartProvider({ children }) {
     setCart(saved);
   }, []);
 
+  // --- Lắng nghe cập nhật từ các trang khác (ví dụ Shop cập nhật localStorage trực tiếp) ---
+  useEffect(() => {
+    const handler = () => {
+      const saved = JSON.parse(localStorage.getItem("cart") || "[]");
+      setCart(saved);
+    };
+    window.addEventListener("cartUpdated", handler);
+    return () => window.removeEventListener("cartUpdated", handler);
+  }, []);
+
   // --- Hàm cập nhật localStorage + gửi event cho Header ---
   const syncCart = (updatedCart) => {
     setCart(updatedCart);

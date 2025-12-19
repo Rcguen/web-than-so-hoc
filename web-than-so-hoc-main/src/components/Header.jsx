@@ -4,7 +4,6 @@ import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import { toast } from "react-toastify";
 
-
 const HEADER_HEIGHT = "80px";
 
 function Header() {
@@ -12,75 +11,68 @@ function Header() {
   const [subOpen, setSubOpen] = useState(false);
   const [cartCount, setCartCount] = useState(0);
   const { cartCount: contextCartCount } = useCart();
-  const navigate = useNavigate();
   const [avatarOpen, setAvatarOpen] = useState(false);
+
+  const navigate = useNavigate();
   const avatarRef = useRef(null);
+  const { user, logout } = useAuth();
 
-  
-
-const { user, logout } = useAuth();
-  
-
-  // 🔥 CẬP NHẬT GIỎ HÀNG REALTIME
-  const updateCartCount = () => {
-    const cart = JSON.parse(localStorage.getItem("cart") || "[]");
-    const total = cart.reduce((sum, i) => sum + Number(i.qty), 0);
-    setCartCount(total);
-  };
-
-  // useEffect(() => {
-  //   updateCartCount();
-
-  //   // Lắng nghe event mỗi khi thêm/xóa sản phẩm
-  //   window.addEventListener("cartUpdated", updateCartCount);
-
-  //   return () => {
-  //     window.removeEventListener("cartUpdated", updateCartCount);
-  //   };
-  // }, []);
-
+  /* ================= CLICK OUTSIDE (FIX MOBILE MENU) ================= */
   useEffect(() => {
-  const handleClickOutside = (e) => {
-    if (avatarRef.current && !avatarRef.current.contains(e.target)) {
-      setAvatarOpen(false);
-    }
-  };
+    const handleClickOutside = (e) => {
+      if (
+        e.target.closest(".menu-trigger") ||
+        e.target.closest(".popup-menu")
+      ) {
+        return;
+      }
 
-  document.addEventListener("mousedown", handleClickOutside);
-  return () => document.removeEventListener("mousedown", handleClickOutside);
-}, []);
+      if (avatarRef.current && !avatarRef.current.contains(e.target)) {
+        setAvatarOpen(false);
+      }
+    };
 
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
+  /* ================= CART LOCAL (GIỮ LOGIC CŨ) ================= */
   useEffect(() => {
-  const update = () => {
-    const cart = JSON.parse(localStorage.getItem("cart") || "[]");
-    const totalQty = cart.reduce((sum, i) => sum + i.qty, 0);
-    setCartCount(totalQty);
-  };
+    const update = () => {
+      const cart = JSON.parse(localStorage.getItem("cart") || "[]");
+      const totalQty = cart.reduce(
+        (sum, i) => sum + Number(i.qty || i.quantity || 0),
+        0
+      );
+      setCartCount(totalQty);
+    };
 
-  update();
-  window.addEventListener("cartUpdated", update);
+    update();
+    window.addEventListener("cartUpdated", update);
+    return () => window.removeEventListener("cartUpdated", update);
+  }, []);
 
-  return () => window.removeEventListener("cartUpdated", update);
-}, []);
-
-
+  /* ================= LOGOUT ================= */
   const handleLogout = () => {
-  logout();
-  toast.info("🚪 Đăng xuất thành công!");
-  navigate("/login");
-};
-
+    logout();
+    toast.info("🚪 Đăng xuất thành công!");
+    navigate("/login");
+  };
 
   return (
     <>
+      {/* ================= STYLE ================= */}
       <style>{`
         * { box-sizing: border-box; }
 
         .header-area {
-          position: fixed; top: 0; left: 0; width: 100%; height: ${HEADER_HEIGHT};
+          position: fixed;
+          top: 0; left: 0;
+          width: 100%;
+          height: ${HEADER_HEIGHT};
           background: linear-gradient(to right, #7a00ff, #aa00ff);
-          display: flex; align-items: center;
+          display: flex;
+          align-items: center;
           z-index: 1000;
           box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
@@ -95,79 +87,174 @@ const { user, logout } = useAuth();
 
         .logo img {
           height: 55px;
-          width: auto;
-          object-fit: contain;
         }
 
-        /* DESKTOP USER INFO */
         .header-right {
           display: flex;
           align-items: center;
-          gap: 15px;
+          gap: 18px;
         }
 
+        /* ===== USER ===== */
         .user-info-h {
+          position: relative;
           display: flex;
           align-items: center;
           gap: 10px;
+          cursor: pointer;
+        }
+
+        .user-avatar {
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          background: #fff;
+          color: #7a00ff;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 800;
+          font-size: 18px;
+          border: 2px solid rgba(255,255,255,0.8);
+          box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .user-avatar img {
+          width: 100%;
+          height: 100%;
+          border-radius: 50%;
+          object-fit: cover;
         }
 
         .user-name {
           color: #fff;
-          font-weight: bold;
-          font-size: 15px;
+          font-weight: 700;
+          font-size: 14px;
         }
 
-        .btn-logout-h {
+        .admin-badge {
+          background: #ffd700;
+          color: #333;
+          font-size: 10px;
+          font-weight: 800;
+          padding: 2px 6px;
+          border-radius: 4px;
+          margin-top: 2px;
+          width: fit-content;
+        }
+
+        /* ===== DROPDOWN ===== */
+        .avatar-dropdown {
+          position: absolute;
+          top: 55px;
+          right: 0;
+          background: #fff;
+          border-radius: 12px;
+          min-width: 220px;
+          box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+          padding: 8px;
+          z-index: 3000;
+          animation: fadeInDown .2s ease;
+        }
+
+        .avatar-dropdown::before {
+          content: "";
+          position: absolute;
+          top: -6px;
+          right: 14px;
+          width: 12px;
+          height: 12px;
+          background: #fff;
+          transform: rotate(45deg);
+        }
+
+        .avatar-dropdown a,
+        .avatar-dropdown button {
+          width: 100%;
+          display: flex;
+          gap: 10px;
+          align-items: center;
+          padding: 10px 12px;
+          border-radius: 8px;
           background: transparent;
-          border: 1px solid rgba(255,255,255,0.7);
-          color: #fff;
-          padding: 6px 14px;
-          border-radius: 6px;
+          border: none;
+          text-decoration: none;
           cursor: pointer;
-          transition: 0.2s;
-        }
-        .btn-logout-h:hover {
-          background: rgba(255,255,255,0.2);
+          font-size: 14px;
+          color: #444;
         }
 
-        /* MENU TRIGGER */
+        .avatar-dropdown a:hover,
+        .avatar-dropdown button:hover {
+          background: #f5f4ff;
+          color: #7a00ff;
+        }
+
+        .dropdown-divider {
+          height: 1px;
+          background: #eee;
+          margin: 6px 0;
+        }
+
+        .dropdown-logout {
+          color: #ff4d4f;
+          font-weight: 600;
+        }
+
+        /* ===== CART ===== */
+        .cart-icon {
+          position: relative;
+          color: #fff;
+          font-size: 24px;
+          text-decoration: none;
+        }
+
+        .cart-badge {
+          position: absolute;
+          top: -8px;
+          right: -8px;
+          background: #ff4d4f;
+          color: #fff;
+          font-size: 11px;
+          font-weight: bold;
+          padding: 2px 6px;
+          border-radius: 50%;
+          border: 2px solid #fff;
+        }
+
+        /* ===== MENU TRIGGER ===== */
         .menu-trigger {
+          width: 40px;
+          height: 40px;
           display: flex;
           flex-direction: column;
           justify-content: center;
           gap: 6px;
-          width: 40px;
-          height: 40px;
           padding: 8px;
           border-radius: 50%;
-          cursor: pointer;
           background: rgba(255,255,255,0.25);
-          transition: 0.2s;
-          z-index: 2001;
+          cursor: pointer;
         }
-        .menu-trigger:hover {
-          background: rgba(255,255,255,0.35);
-        }
+
         .menu-trigger span {
           height: 2px;
-          width: 100%;
           background: #fff;
-          transition: 0.3s;
         }
 
-        /* When menu is active (X icon) */
-        .menu-trigger.active span:nth-child(1) {
-          transform: rotate(45deg) translate(5px, 5px);
-        }
-        .menu-trigger.active span:nth-child(2) {
-          opacity: 0;
-        }
-        .menu-trigger.active span:nth-child(3) {
-          transform: rotate(-45deg) translate(5px, -5px);
+        /* ===== OVERLAY ===== */
+        .menu-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0,0,0,0.25);
+          display: none;
+          z-index: 1500;
         }
 
-        /* POPUP MENU */
+        .menu-overlay.show {
+          display: block;
+        }
+
+        /* ===== POPUP MENU ===== */
         .popup-menu {
           position: fixed;
           top: ${HEADER_HEIGHT};
@@ -176,11 +263,10 @@ const { user, logout } = useAuth();
           background: #fff;
           border-radius: 15px;
           box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-          padding-bottom: 10px;
           opacity: 0;
           visibility: hidden;
-          transform: translateY(-20px) scale(0.95);
-          transition: all 0.25s ease;
+          transform: translateY(-20px) scale(.95);
+          transition: .25s;
           z-index: 2000;
         }
 
@@ -196,7 +282,7 @@ const { user, logout } = useAuth();
           margin: 0;
         }
 
-        .popup-nav a, 
+        .popup-nav a,
         .menu-item-span {
           display: flex;
           align-items: center;
@@ -206,9 +292,8 @@ const { user, logout } = useAuth();
           text-decoration: none;
           color: #333;
           font-weight: 500;
-          font-size: 15px;
         }
-        
+
         .icon-dot {
           width: 32px;
           height: 32px;
@@ -226,140 +311,106 @@ const { user, logout } = useAuth();
           background: #f5f4ff;
         }
 
-        .popup-nav a.active {
-          background: #f3e8ff;
-          color: #7a00ff;
-          font-weight: 700;
-        }
-
-        /* SUB MENU DROPDOWN */
         .sub-menu {
           display: none;
           padding-left: 45px;
-          margin-top: 5px;
         }
+
         .sub-menu.show {
           display: block;
         }
 
-        .sub-menu a {
-          padding: 7px 0;
-          font-size: 14px;
-          color: #666;
-        }
-        .sub-menu a:hover {
-          color: #7a00ff;
+        @keyframes fadeInDown {
+          from { opacity: 0; transform: translateY(-10px); }
+          to { opacity: 1; transform: translateY(0); }
         }
 
-        /* OVERLAY */
-        .menu-overlay {
-          position: fixed;
-          top: 0; left: 0;
-          width: 100%; height: 100%;
-          display: none;
-          background: rgba(0,0,0,0.15);
-          z-index: 1500;
-        }
-        .menu-overlay.show {
-          display: block;
+        @media (max-width: 576px) {
+          .user-name, .admin-badge { display: none; }
         }
       `}</style>
 
-      {/* Overlay */}
+      {/* OVERLAY */}
       <div
         className={`menu-overlay ${menuOpen ? "show" : ""}`}
         onClick={() => setMenuOpen(false)}
-      ></div>
+      />
 
-      {/* HEADER */}
+      {/* ================= HEADER ================= */}
       <header className="header-area">
         <div className="container">
-
           <NavLink to="/" className="logo">
-            <img src="/assets/images/logo.png" />
+            <img src="/assets/images/logo.png" alt="Logo" />
           </NavLink>
 
           <div className="header-right">
+            {user ? (
+              <div
+                className="user-info-h"
+                ref={avatarRef}
+                onClick={() => setAvatarOpen(!avatarOpen)}
+              >
+                <div className="user-avatar">
+                  {user.avatar_url ? (
+                    <img src={`http://127.0.0.1:5000${user.avatar_url}`} />
+                  ) : (
+                    user.full_name?.charAt(0).toUpperCase()
+                  )}
+                </div>
 
-            {user && (
-  <div className="user-info-h" ref={avatarRef}>
+                <div>
+                  <div className="user-name">{user.full_name}</div>
+                  {user.role === "admin" && (
+                    <div className="admin-badge">ADMIN</div>
+                  )}
+                </div>
 
-    {/* AVATAR (CLICK ĐỂ MỞ DROPDOWN) */}
-    <div
-      className="user-avatar"
-      onClick={() => setAvatarOpen(!avatarOpen)}
-      style={{ cursor: "pointer" }}
-      title="Tài khoản"
-    >
-      {user.full_name?.charAt(0).toUpperCase()}
-    </div>
+                {avatarOpen && (
+                  <div className="avatar-dropdown">
+                    <Link to="/profile">👤 Hồ sơ</Link>
+                    <Link to="/orders">📦 Đơn hàng</Link>
 
-    {/* NAME + BADGE */}
-    <div
-      onClick={() => setAvatarOpen(!avatarOpen)}
-      style={{ cursor: "pointer", display: "flex", flexDirection: "column" }}
-    >
-      <span className="user-name">{user.full_name}</span>
-      {user.role === "admin" && <span className="admin-badge">ADMIN</span>}
-    </div>
+                    {user.role === "admin" && (
+                      <Link to="/admin">🛠️ Admin Panel</Link>
+                    )}
 
-    {/* DROPDOWN */}
-    {avatarOpen && (
-      <div className="avatar-dropdown">
-        
-        {/* USER */}
-        <Link to="/orders" onClick={() => setAvatarOpen(false)}>
-          📦 Đơn hàng của tôi
-        </Link>
+                    <div className="dropdown-divider" />
 
-        {/* ADMIN */}
-        {user.role === "admin" && (
-          <Link to="/admin" onClick={() => setAvatarOpen(false)}>
-            🛠️ Admin Panel
-          </Link>
-        )}
+                    <button
+                      className="dropdown-logout"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setAvatarOpen(false);
+                        handleLogout();
+                      }}
+                    >
+                      🚪 Đăng xuất
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div style={{ display: "flex", gap: 10 }}>
+                <NavLink to="/login" style={{ color: "#fff" }}>
+                  Đăng Nhập
+                </NavLink>
+                <NavLink to="/register" style={{ color: "#fff" }}>
+                  Đăng Ký
+                </NavLink>
+              </div>
+            )}
 
-        <div className="dropdown-divider" />
-
-        <button
-          className="dropdown-logout"
-          onClick={() => {
-            setAvatarOpen(false);
-            handleLogout();
-          }}
-        >
-          🚪 Đăng xuất
-        </button>
-      </div>
-    )}
-
-  </div>
-)}
-
-
-
-            {/* 🛒 GIỎ HÀNG + BADGE */}
-            <Link to="/cart" className="cart-icon" style={{ position: "relative" }}>
-              <span className="icon">🛒</span>
-              {contextCartCount > 0 && (
-                <span
-                  style={{
-                    position: "absolute",
-                    top: "-5px",
-                    right: "-10px",
-                    background: "red",
-                    color: "white",
-                    fontSize: "12px",
-                    padding: "2px 6px",
-                    borderRadius: "50%",
-                  }} className="badge"
-                >
-                  {cartCount}
+            {/* CART */}
+            <Link to="/cart" className="cart-icon">
+              🛒
+              {(contextCartCount > 0 || cartCount > 0) && (
+                <span className="cart-badge">
+                  {contextCartCount || cartCount}
                 </span>
               )}
             </Link>
 
-            {/* NÚT MENU */}
+            {/* MENU */}
             <div
               className={`menu-trigger ${menuOpen ? "active" : ""}`}
               onClick={() => setMenuOpen(!menuOpen)}
@@ -370,207 +421,101 @@ const { user, logout } = useAuth();
         </div>
       </header>
 
-      {/* MENU POPUP */}
+      {/* ================= MOBILE POPUP MENU ================= */}
       <div className={`popup-menu ${menuOpen ? "show" : ""}`}>
         {user && (
-  <li style={{ padding: "10px 15px" }}>
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: "12px",
-        padding: "10px",
-        borderRadius: "12px",
-        background: "#f5f4ff",
-      }}
-    >
-      <div className="user-avatar">
-        {user.full_name?.charAt(0).toUpperCase()}
-      </div>
-
-      <div>
-        <div style={{ fontWeight: "bold", fontSize: "14px" }}>
-          {user.full_name}
-        </div>
-
-        {user.role === "admin" && (
-          <div className="admin-badge">
-            ADMIN
+          <div style={{ padding: 15, background: "#f5f4ff" }}>
+            <div className="user-avatar">
+              {user.full_name?.charAt(0).toUpperCase()}
+            </div>
+            <div style={{ fontWeight: "bold" }}>{user.full_name}</div>
+            {user.role === "admin" && (
+              <div className="admin-badge">ADMIN</div>
+            )}
           </div>
         )}
-      </div>
-    </div>
-  </li>
-)}
 
         <ul className="popup-nav">
+          <li>
+            <NavLink to="/" onClick={() => setMenuOpen(false)}>
+              <div className="icon-dot">🏠</div>Trang Chủ
+            </NavLink>
+          </li>
 
-  {/* ================= MENU CÔNG KHAI ================= */}
-  <li>
-    <NavLink to="/" onClick={() => setMenuOpen(false)}>
-      <div className="icon-dot">🏠</div>Trang Chủ
-    </NavLink>
-  </li>
+          <li>
+            <div
+              className="menu-item-span"
+              onClick={() => setSubOpen(!subOpen)}
+            >
+              <div className="icon-dot">🔮</div>
+              Thần Số Học
+              <span style={{ marginLeft: "auto" }}>
+                {subOpen ? "▲" : "▼"}
+              </span>
+            </div>
 
-  <li>
-    <div
-      className="menu-item-span"
-      onClick={() => setSubOpen(!subOpen)}
-    >
-      <div className="icon-dot">🔮</div>
-      Thần Số Học
-      <span style={{ marginLeft: "auto" }}>
-        {subOpen ? "▲" : "▼"}
-      </span>
-    </div>
+            <div className={`sub-menu ${subOpen ? "show" : ""}`}>
+              <NavLink to="/lookup" onClick={() => setMenuOpen(false)}>
+                Tra Cứu
+              </NavLink>
+              <NavLink to="/history" onClick={() => setMenuOpen(false)}>
+                Lịch Sử Tra Cứu
+              </NavLink>
+            </div>
+          </li>
 
-    <div className={`sub-menu ${subOpen ? "show" : ""}`}>
-      <NavLink to="/lookup" onClick={() => setMenuOpen(false)}>
-        Tra Cứu
-      </NavLink>
-      <NavLink to="/services" onClick={() => setMenuOpen(false)}>
-        Các Chỉ Số
-      </NavLink>
-      <NavLink to="/projects" onClick={() => setMenuOpen(false)}>
-        Báo Cáo Mẫu
-      </NavLink>
-      <NavLink to="/history" onClick={() => setMenuOpen(false)}>
-        Lịch Sử Tra Cứu
-      </NavLink>
-    </div>
-  </li>
+          <li>
+            <NavLink to="/shop" onClick={() => setMenuOpen(false)}>
+              <div className="icon-dot">🛒</div>Cửa Hàng
+            </NavLink>
+          </li>
 
-  <li>
-    <NavLink to="/shop" onClick={() => setMenuOpen(false)}>
-      <div className="icon-dot">🛒</div>Cửa Hàng
-    </NavLink>
-  </li>
+          {user && (
+            <>
+              <li>
+                <NavLink to="/cart" onClick={() => setMenuOpen(false)}>
+                  <div className="icon-dot">🛍️</div>Giỏ Hàng
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/profile" onClick={() => setMenuOpen(false)}>
+                  <div className="icon-dot">👤</div>Hồ Sơ
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/orders" onClick={() => setMenuOpen(false)}>
+                  <div className="icon-dot">📦</div>Đơn Hàng
+                </NavLink>
+              </li>
+            </>
+          )}
 
-  {/* ================= MENU USER (ĐÃ LOGIN) ================= */}
-  {user && (
-    <>
-      <li>
-        <NavLink to="/cart" onClick={() => setMenuOpen(false)}>
-          <div className="icon-dot">🛍️</div>Giỏ Hàng
-        </NavLink>
-      </li>
+          {user?.role === "admin" && (
+            <li>
+              <NavLink to="/admin" onClick={() => setMenuOpen(false)}>
+                <div className="icon-dot">🛠️</div>Admin Panel
+              </NavLink>
+            </li>
+          )}
 
-      <li>
-        <NavLink to="/profile" onClick={() => setMenuOpen(false)}>
-          <div className="icon-dot">👤</div>Hồ Sơ Của Tôi
-        </NavLink>
-      </li>
-
-      <li>
-        <NavLink to="/orders" onClick={() => setMenuOpen(false)}>
-          <div className="icon-dot">📦</div>Đơn Hàng Của Tôi
-        </NavLink>
-      </li>
-    </>
-  )}
-
-  {/* ================= MENU ADMIN ================= */}
-  {user && user.role === "admin" && (
-    <li>
-      <NavLink to="/admin" onClick={() => setMenuOpen(false)}>
-        <div className="icon-dot">🛠️</div>Admin Panel
-      </NavLink>
-    </li>
-  )}
-
-  {/* ================= MENU KHÁCH (CHƯA LOGIN) ================= */}
-  {!user && (
-    <>
-      <li>
-        <NavLink to="/login" onClick={() => setMenuOpen(false)}>
-          <div className="icon-dot">🔐</div>Đăng Nhập
-        </NavLink>
-      </li>
-
-      <li>
-        <NavLink to="/register" onClick={() => setMenuOpen(false)}>
-          <div className="icon-dot">📝</div>Đăng Ký
-        </NavLink>
-      </li>
-    </>
-  )}
-
-</ul>
-
+          {!user && (
+            <>
+              <li>
+                <NavLink to="/login" onClick={() => setMenuOpen(false)}>
+                  <div className="icon-dot">🔐</div>Đăng Nhập
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/register" onClick={() => setMenuOpen(false)}>
+                  <div className="icon-dot">📝</div>Đăng Ký
+                </NavLink>
+              </li>
+            </>
+          )}
+        </ul>
       </div>
     </>
   );
 }
 
 export default Header;
-
-<style>{`.user-avatar {
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  background: #fff;
-  color: #7a00ff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
-  font-size: 16px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-}
-
-.admin-badge {
-  margin-top: 2px;
-  display: inline-block;
-  background: #ffd700;
-  color: #333;
-  font-size: 11px;
-  font-weight: 700;
-  padding: 2px 6px;
-  border-radius: 6px;
-  width: fit-content;
-}
-
-.avatar-dropdown {
-  position: absolute;
-  top: 60px;
-  right: 0;
-  background: #fff;
-  border-radius: 12px;
-  min-width: 200px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-  padding: 8px;
-  z-index: 3000;
-}
-
-.avatar-dropdown a,
-.avatar-dropdown button {
-  display: block;
-  width: 100%;
-  padding: 10px 12px;
-  border-radius: 8px;
-  text-decoration: none;
-  border: none;
-  background: transparent;
-  text-align: left;
-  cursor: pointer;
-  font-size: 14px;
-  color: #333;
-}
-
-.avatar-dropdown a:hover,
-.avatar-dropdown button:hover {
-  background: #f5f4ff;
-}
-
-.dropdown-divider {
-  height: 1px;
-  background: #eee;
-  margin: 6px 0;
-}
-
-.dropdown-logout {
-  color: #ff4d4f;
-  font-weight: 600;
-}
-
-`}</style>

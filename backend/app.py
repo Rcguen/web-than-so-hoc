@@ -15,6 +15,7 @@ from shop.profile_routes import profile
 from shipping.shipping_routes import shipping_routes
 from dotenv import load_dotenv
 from vnpay_service import create_vnpay_url
+from momo_service import create_momo_payment
 
 from pdf_loader import extract_text_from_pdf as read_pdf_text
 
@@ -1445,6 +1446,89 @@ def vnpay_return():
     else:
         print("vnpay_return: vnp_ResponseCode != 00 -> fail", params.get("vnp_ResponseCode"))
         return redirect(f"{frontend}/payment-fail")
+
+# =====================================================
+#       MOMO PAYMENT CALLBACK
+# =====================================================
+
+@app.post("/api/momo/create-payment")
+def momo_create_payment():
+    data = request.json
+
+    result = create_momo_payment(
+        order_id=data["orderId"],
+        amount=data["amount"],
+        return_url=os.getenv("MOMO_RETURN_URL"),
+        ipn_url=os.getenv("MOMO_IPN_URL"),
+        partner_code=os.getenv("MOMO_PARTNER_CODE"),
+        access_key=os.getenv("MOMO_ACCESS_KEY"),
+        secret_key=os.getenv("MOMO_SECRET_KEY"),
+        endpoint=os.getenv("MOMO_ENDPOINT")
+    )
+
+    if "payUrl" in result:
+        return jsonify({"payUrl": result["payUrl"]})
+    else:
+        # log để debug
+        return jsonify(result), 400
+
+@app.get("/api/momo/return")
+def momo_return():
+    result_code = request.args.get("resultCode")
+
+    if result_code == "0":
+        return redirect("http://localhost:3000/payment-success")
+    else:
+        return redirect("http://localhost:3000/payment-fail")
+
+
+@app.post("/api/momo/ipn")
+def momo_ipn():
+    data = request.json
+
+    if data.get("resultCode") == 0:
+        # update order = PAID
+        pass
+    else:
+        # FAILED / CANCELED
+        pass
+
+    return {"message": "OK"}
+
+# ====================================================
+# Related Products
+# ====================================================
+
+# GET /api/products/<int:product_id>/related
+@app.route("/api/products/<int:product_id>/related", methods=["GET"])
+def get_related_products(product_id):
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    # Lấy category_id của sản phẩm hiện tại
+    cursor.execute(
+        "SELECT category_id FROM products WHERE product_id = %s",
+        (product_id,)
+    )
+    product = cursor.fetchone()
+    if not product:
+        return jsonify([])
+
+    category_id = product["category_id"]
+
+    # Lấy sản phẩm liên quan
+    cursor.execute("""
+        SELECT product_id, product_name, price, image_url
+        FROM products
+        WHERE category_id = %s
+        AND product_id != %s
+        LIMIT 4
+    """, (category_id, product_id))
+
+    related = cursor.fetchall()
+    conn.close()
+
+    return jsonify(related)
 
 
 # =====================================================

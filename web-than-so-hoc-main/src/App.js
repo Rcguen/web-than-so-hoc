@@ -45,7 +45,9 @@ import AdminUsers from './admin/pages/AdminUser.jsx';
 import AdminMessages from './admin/pages/AdminMessages.jsx';
 import NumerologyAI from './pages/NumerologyAI.jsx';
 import FloatingChat from './components/chatbot/FloatingChat.jsx';
-
+import PaymentSuccess from './pages/PaymentSuccess.jsx';
+import PaymentFail from './pages/PaymentFail.jsx';
+import VNPayReturnProxy from './pages/VNPayReturnProxy.jsx';
 
 function App() {
   const location = useLocation(); // ⭐ Giờ đã OK vì Router nằm ở index.js
@@ -113,6 +115,10 @@ function App() {
           <Route path="/payment/mock/:orderId" element={<MockPayment />} />
           <Route path="/shipping-selector" element={<ShippingSelector />} />
           <Route path="/numerology-ai" element={<NumerologyAI />} />
+          <Route path="/payment-success" element={<PaymentSuccess />} />
+          <Route path="/payment-fail" element={<PaymentFail />} />
+          <Route path="/api/vnpay/return" element={<VNPayReturnProxy />} />
+
           <Route
   path="/admin"
   element={

@@ -3,7 +3,9 @@ import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import "./orderDetail.css";
 export default function OrderDetail() {
-  const { order_id } = useParams();
+  // Read route params robustly: prefer `order_id` but support `id` as fallback
+  const params = useParams();
+  const order_id = params.order_id || params.id;
   const navigate = useNavigate();
 
   const [order, setOrder] = useState(null);
@@ -16,19 +18,49 @@ export default function OrderDetail() {
   // ============================
   const fetchOrderDetail = async () => {
     try {
-      const res = await axios.get(`http://127.0.0.1:5000/api/admin/orders/${order_id}`);
+      console.log("OrderDetail: fetching order_id=" + order_id);
+      const token = localStorage.getItem("token");
+      const res = await axios.get(`http://127.0.0.1:5000/api/admin/orders/${encodeURIComponent(order_id)}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
       setOrder(res.data.order);
       setItems(res.data.items);
       setStatus(res.data.order.order_status);
       setLoading(false);
     } catch (err) {
       console.error(err);
+      // Provide clearer error messages for auth/forbidden/not-found
+      if (err.response) {
+        const status = err.response.status;
+        if (status === 401) {
+          alert("Vui lòng đăng nhập bằng tài khoản admin để xem chi tiết");
+          navigate("/login");
+          return;
+        }
+        if (status === 403) {
+          alert("Bạn không có quyền truy cập trang này");
+          navigate("/admin/orders");
+          return;
+        }
+        if (status === 404) {
+          alert("Không tìm thấy đơn hàng này");
+          navigate("/admin/orders");
+          return;
+        }
+      }
+
       alert("Không thể tải chi tiết đơn hàng!");
       setLoading(false);
     }
   };
 
   useEffect(() => {
+    // Wait until route param becomes available. Sometimes useParams is undefined for a render cycle.
+    if (typeof order_id === "undefined" || order_id === null || order_id === "undefined") {
+      console.log("OrderDetail: waiting for order_id param...", order_id);
+      return;
+    }
+
     fetchOrderDetail();
   }, [order_id]);
 
@@ -37,8 +69,11 @@ export default function OrderDetail() {
   // ============================
   const updateStatus = async () => {
     try {
+      const token = localStorage.getItem("token");
       await axios.put(`http://127.0.0.1:5000/api/admin/orders/${order_id}/status`, {
         status,
+      }, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
       });
 
       alert("Cập nhật trạng thái thành công!");

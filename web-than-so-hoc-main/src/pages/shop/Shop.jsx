@@ -1,61 +1,52 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import "./Page.css";
 
 function Shop() {
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
 
   const [activeCategory, setActiveCategory] = useState("all");
+  const [search, setSearch] = useState("");
+  const [sort, setSort] = useState("none"); // none | price_asc | price_desc
 
   useEffect(() => {
     loadCategories();
     loadProducts();
   }, []);
 
-  // ---------------------------
-  // LOAD CATEGORY
-  // ---------------------------
+  /* ================= LOAD CATEGORY ================= */
   const loadCategories = async () => {
     try {
       const res = await fetch("http://127.0.0.1:5000/api/categories");
       const data = await res.json();
       setCategories(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.log("Load categories error", err);
+      console.error("Load categories error", err);
     }
   };
 
-  // ---------------------------
-  // LOAD PRODUCTS
-  // ---------------------------
+  /* ================= LOAD PRODUCTS ================= */
   const loadProducts = async (category_id = "all") => {
     try {
       let url = "http://127.0.0.1:5000/api/products";
       if (category_id !== "all") {
         url = `http://127.0.0.1:5000/api/products/category/${category_id}`;
       }
-
       const res = await fetch(url);
       const data = await res.json();
       setProducts(Array.isArray(data) ? data : []);
-    } catch (err) {
+    } catch {
       alert("Không tải được sản phẩm!");
-      console.log(err);
     }
   };
 
-  // ---------------------------
-  // ADD TO CART
-  // ---------------------------
+  /* ================= ADD TO CART ================= */
   const addToCart = (p) => {
     let cart = JSON.parse(localStorage.getItem("cart") || "[]");
+    const found = cart.find((i) => i.product_id === p.product_id);
 
-    let found = cart.find((item) => item.product_id === p.product_id);
-
-    if (found) {
-      found.qty += 1;
-    } else {
+    if (found) found.qty += 1;
+    else {
       cart.push({
         product_id: p.product_id,
         product_name: p.product_name,
@@ -66,18 +57,215 @@ function Shop() {
     }
 
     localStorage.setItem("cart", JSON.stringify(cart));
-    alert("Đã thêm vào giỏ hàng!");
+    window.dispatchEvent(new Event("cartUpdated"));
+    alert("🛒 Đã thêm vào giỏ hàng!");
   };
 
-  return (
-    <div className="shop-container" style={{ padding: "80px 40px" }}>
-      <h1 style={{ textAlign: "center", color: "#5b03e4" }}>🛍 Cửa Hàng</h1>
+  /* ================= FILTER + SORT ================= */
+  const filteredProducts = useMemo(() => {
+    let list = [...products];
 
-      {/* CATEGORY FILTER */}
-      <div
-        className="category-filter"
-        style={{ display: "flex", gap: "15px", margin: "30px 0" }}
-      >
+    // SEARCH
+    if (search.trim()) {
+      const key = search.toLowerCase();
+      list = list.filter((p) =>
+        p.product_name.toLowerCase().includes(key)
+      );
+    }
+
+    // SORT
+    if (sort === "price_asc") {
+      list.sort((a, b) => Number(a.price) - Number(b.price));
+    }
+    if (sort === "price_desc") {
+      list.sort((a, b) => Number(b.price) - Number(a.price));
+    }
+
+    return list;
+  }, [products, search, sort]);
+
+  return (
+    <div className="shop-page">
+      <style>{`
+        .shop-page {
+          padding: 120px 30px 60px;
+          background: #f8f9fa;
+          min-height: 100vh;
+          font-family: 'Segoe UI', sans-serif;
+        }
+
+        .shop-title {
+          text-align: center;
+          font-size: 34px;
+          font-weight: 800;
+          margin-bottom: 8px;
+        }
+        .shop-title span { color: #7a00ff; }
+
+        .shop-desc {
+          text-align: center;
+          color: #666;
+          margin-bottom: 35px;
+        }
+
+        /* TOOLBAR */
+        .shop-toolbar {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 15px;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 30px;
+        }
+
+        .search-box {
+          flex: 1;
+          max-width: 320px;
+        }
+
+        .search-input {
+          width: 100%;
+          padding: 12px 16px;
+          border-radius: 50px;
+          border: 1px solid #ddd;
+          outline: none;
+        }
+
+        .sort-select {
+          padding: 12px 18px;
+          border-radius: 50px;
+          border: 1px solid #ddd;
+          cursor: pointer;
+        }
+
+        /* CATEGORY */
+        .category-filter {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 12px;
+          justify-content: center;
+          margin-bottom: 35px;
+        }
+
+        .category-btn {
+          padding: 10px 22px;
+          border-radius: 50px;
+          border: 2px solid #eee;
+          background: #fff;
+          font-weight: 600;
+          cursor: pointer;
+        }
+
+        .category-btn.active {
+          background: linear-gradient(to right, #7a00ff, #aa00ff);
+          color: #fff;
+          border-color: transparent;
+        }
+
+        /* GRID */
+        .product-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+          gap: 30px;
+        }
+
+        .product-card {
+          background: #fff;
+          border-radius: 20px;
+          overflow: hidden;
+          box-shadow: 0 8px 30px rgba(0,0,0,0.06);
+          transition: 0.25s;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .product-card:hover {
+          transform: translateY(-6px);
+          box-shadow: 0 15px 40px rgba(0,0,0,0.12);
+        }
+
+        .product-img {
+          width: 100%;
+          height: 220px;
+          object-fit: cover;
+        }
+
+        .product-body {
+          padding: 18px;
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .product-name {
+          font-weight: 700;
+          margin-bottom: 8px;
+          flex: 1;
+        }
+
+        .product-price {
+          font-size: 18px;
+          font-weight: 800;
+          color: #7a00ff;
+          margin-bottom: 12px;
+        }
+
+        .product-actions {
+          display: flex;
+          gap: 10px;
+        }
+
+        .btn-view, .btn-add {
+          flex: 1;
+          padding: 10px;
+          border-radius: 50px;
+          border: none;
+          font-weight: 700;
+          cursor: pointer;
+        }
+
+        .btn-view {
+          background: #f2ecff;
+          color: #7a00ff;
+        }
+
+        .btn-add {
+          background: linear-gradient(to right, #7a00ff, #aa00ff);
+          color: #fff;
+        }
+      `}</style>
+
+      <h1 className="shop-title">
+        🛍 <span>Cửa Hàng</span>
+      </h1>
+      <p className="shop-desc">
+        Tìm kiếm và sắp xếp sản phẩm theo nhu cầu của bạn
+      </p>
+
+      {/* TOOLBAR */}
+      <div className="shop-toolbar">
+        <div className="search-box">
+          <input
+            className="search-input"
+            placeholder="🔍 Tìm sản phẩm..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+
+        <select
+          className="sort-select"
+          value={sort}
+          onChange={(e) => setSort(e.target.value)}
+        >
+          <option value="none">Sắp xếp</option>
+          <option value="price_asc">Giá: Thấp → Cao</option>
+          <option value="price_desc">Giá: Cao → Thấp</option>
+        </select>
+      </div>
+
+      {/* CATEGORY */}
+      <div className="category-filter">
         <button
           className={`category-btn ${activeCategory === "all" ? "active" : ""}`}
           onClick={() => {
@@ -105,58 +293,37 @@ function Shop() {
       </div>
 
       {/* PRODUCT GRID */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
-          gap: "25px",
-        }}
-      >
-        {products.map((prod) => (
-          <div
-            key={prod.product_id}
-            className="product-card"
-            style={{
-              border: "1px solid #eee",
-              borderRadius: "12px",
-              padding: "15px",
-              textAlign: "center",
-              background: "#fff",
-              boxShadow: "0 4px 8px rgba(0,0,0,0.05)",
-            }}
-          >
+      <div className="product-grid">
+        {filteredProducts.map((prod) => (
+          <div className="product-card" key={prod.product_id}>
             <Link to={`/product/${prod.product_id}`}>
               <img
                 src={`http://127.0.0.1:5000${prod.image_url}`}
                 alt={prod.product_name}
-                style={{
-                  width: "100%",
-                  height: "200px",
-                  objectFit: "cover",
-                  borderRadius: "10px",
-                }}
+                className="product-img"
+                onError={(e) =>
+                  (e.target.src = "https://via.placeholder.com/300x300")
+                }
               />
             </Link>
 
-            <h3 style={{ marginTop: "10px" }}>{prod.product_name}</h3>
+            <div className="product-body">
+              <div className="product-name">{prod.product_name}</div>
+              <div className="product-price">
+                {Number(prod.price).toLocaleString("vi-VN")} đ
+              </div>
 
-            <p style={{ color: "#5b03e4", fontWeight: "bold" }}>
-              {Number(prod.price).toLocaleString()} đ
-            </p>
-
-            {/* BUTTONS */}
-            <div className="product-actions" style={{ marginTop: "10px" }}>
-              <Link to={`/product/${prod.product_id}`}>
-                <button className="btn-view">Xem chi tiết</button>
-              </Link>
-
-              <button
-                className="btn-add"
-                style={{ marginLeft: "10px" }}
-                onClick={() => addToCart(prod)}
-              >
-                Mua ngay 🛒
-              </button>
+              <div className="product-actions">
+                <Link to={`/product/${prod.product_id}`} style={{ flex: 1 }}>
+                  <button className="btn-view">Xem</button>
+                </Link>
+                <button
+                  className="btn-add"
+                  onClick={() => addToCart(prod)}
+                >
+                  Mua
+                </button>
+              </div>
             </div>
           </div>
         ))}

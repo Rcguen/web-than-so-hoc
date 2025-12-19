@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import PaymentBadge from "../../components/PaymentBadge";
 import AdminOrderStatusBadge from "../pages/AdminOrderStatusBadge";
@@ -13,7 +13,10 @@ export default function Orders() {
 
   const fetchOrders = async () => {
     try {
-      const res = await axios.get("http://127.0.0.1:5000/api/admin/orders");
+      const token = localStorage.getItem("token");
+      const res = await axios.get("http://127.0.0.1:5000/api/admin/orders", {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
       console.log("Orders:", res.data.orders); // DEBUG
       setOrders(res.data.orders || []);
       setLoading(false);
@@ -24,15 +27,27 @@ export default function Orders() {
     }
   };
 
-  useEffect(() => {
-  fetchOrders();
+  const navigate = useNavigate();
 
-  const params = new URLSearchParams(location.search);
-  if (params.get("paid") === "1") {
-    // optional: toast cho admin
-    // toast.success("Đơn hàng đã được thanh toán!");
-  }
-}, [location.search]);
+  const handleView = (id) => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      alert("Vui lòng đăng nhập bằng tài khoản admin để xem chi tiết");
+      navigate("/login");
+      return;
+    }
+    navigate(`/admin/orders/${id}`);
+  };
+
+  useEffect(() => {
+    fetchOrders();
+
+    const params = new URLSearchParams(location.search);
+    if (params.get("paid") === "1") {
+      // optional: toast cho admin
+      // toast.success("Đơn hàng đã được thanh toán!");
+    }
+  }, [location.search]);
 
 
   const formatDate = (dateStr) => {
@@ -111,9 +126,9 @@ export default function Orders() {
 
                 <td>{formatDate(order.created_at)}</td>
                 <td>
-                  <Link className="view-btn" to={`/admin/orders/${order.order_id}`}>
+                  <button className="view-btn" onClick={() => handleView(order.order_id)}>
                     Xem
-                  </Link>
+                  </button>
                 </td>
                 {/* Thanh toán trạng thái */}
                 <td>

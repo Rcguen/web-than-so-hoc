@@ -17,6 +17,12 @@ export default function AdminOrderStatusBadge({ status, orderId, onUpdated }) {
   };
 
   const handleClick = async () => {
+    // Guard: ensure we have a valid orderId
+    if (!orderId) {
+      toast.error("Không thể cập nhật: thiếu order id");
+      return;
+    }
+
     const { value: newStatus } = await Swal.fire({
       title: "Cập nhật trạng thái",
       input: "select",
@@ -28,11 +34,12 @@ export default function AdminOrderStatusBadge({ status, orderId, onUpdated }) {
     if (!newStatus || newStatus === status) return;
 
     try {
+      const token = localStorage.getItem("token");
       await fetch(
         `http://127.0.0.1:5000/api/admin/orders/${orderId}/status`,
         {
           method: "PUT",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
           body: JSON.stringify({ status: newStatus }),
         }
       );

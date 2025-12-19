@@ -151,3 +151,127 @@
   from { opacity: 0; transform: scale(0.9); }
   to { opacity: 1; transform: scale(1); }
 }
+
+
+/* ===== LOOKUP UPGRADE ===== */
+
+.lookup-section {
+  background: linear-gradient(180deg, #faf7ff, #ffffff);
+}
+
+.lookup-header h1 {
+  font-size: 34px;
+  font-weight: 900;
+  color: #4b0082;
+}
+
+.lookup-header p {
+  max-width: 720px;
+  margin: 0 auto;
+  font-size: 16px;
+  color: #555;
+}
+
+/* FORM */
+.lookup-form {
+  background: #fff;
+  padding: 30px;
+  border-radius: 20px;
+  box-shadow: 0 10px 35px rgba(0,0,0,0.08);
+}
+
+.lookup-form button {
+  background: linear-gradient(to right, #7a00ff, #aa00ff);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+/* RESULT CARDS */
+.result-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+}
+
+.result-card {
+  background: #fff;
+  border-radius: 18px;
+  padding: 25px 15px;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+  cursor: pointer;
+  transition: 0.3s;
+  border: 2px solid transparent;
+}
+
+.result-card:hover {
+  transform: translateY(-6px);
+  border-color: #7a00ff;
+  box-shadow: 0 15px 35px rgba(122,0,255,0.25);
+}
+
+.result-card h3 {
+  font-size: 16px;
+  margin-bottom: 10px;
+}
+
+.result-card p {
+  font-size: 28px;
+  font-weight: 900;
+  color: #7a00ff;
+}
+
+/* CHART */
+.birth-chart,
+.name-chart {
+  background: #fff;
+  padding: 30px;
+  border-radius: 24px;
+  margin-top: 40px;
+  box-shadow: 0 10px 35px rgba(0,0,0,0.08);
+}
+
+.chart-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+  margin: 20px 0;
+}
+
+.chart-cell {
+  background: #f8f4ff;
+  border-radius: 14px;
+  padding: 15px;
+  text-align: center;
+  font-weight: 700;
+  transition: 0.2s;
+}
+
+.chart-cell:hover {
+  background: #e9ddff;
+}
+
+/* ARROWS */
+.arrows ul li {
+  background: #f4ecff;
+  padding: 10px 14px;
+  border-radius: 12px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.arrows ul li:hover {
+  background: #7a00ff;
+  color: #fff;
+}
+
+/* POPUP */
+.popup-content {
+  max-width: 600px;
+  border-radius: 20px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+}
+
+.popup-content h2 {
+  color: #7a00ff;
+}

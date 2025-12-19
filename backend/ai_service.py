@@ -37,6 +37,7 @@ Bề ngoài bạn thể hiện là người quyết đoán, mạnh mẽ và có 
 TỔNG KẾT:
 Thần số học cho thấy bạn phù hợp với các lĩnh vực sáng tạo, giáo dục, truyền thông, tư vấn hoặc phát triển cá nhân.
 
+
 {knowledge_text}
 """
 
