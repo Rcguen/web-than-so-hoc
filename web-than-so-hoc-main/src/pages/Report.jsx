@@ -1,9 +1,14 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { calcAllNumbers } from "../utils/numerology";
-import { callGemini } from "../components/api/geminiApi.jsx";
 
 const LS_KEY = "numerology_history_v1";
+
+const badgeMap = {
+  book: { label: "BOOK", color: "#2c7be5" },
+  esgoo: { label: "ESGOO", color: "#00a86b" },
+  ai: { label: "AI", color: "#7a00ff" }
+};
 
 /* ================= LOCAL STORAGE ================= */
 const loadHistory = () => {
@@ -66,7 +71,7 @@ export default function ReportAI() {
 
   useEffect(() => saveHistory(history), [history]);
 
-  /* ================= SELECTED ITEM = SOURCE OF TRUTH ================= */
+  /* ================= SELECTED ITEM ================= */
   useEffect(() => {
     if (!selectedId) return;
 
@@ -83,7 +88,7 @@ export default function ReportAI() {
     setSummary(item.summary || "");
   }, [selectedId, history]);
 
-  /* ================= AUTO CALC ================= */
+  /* ================= AUTO CALC NUMBERS ================= */
   useEffect(() => {
     if (!form.name || !form.birth_date) return;
     setNumbers(calcAllNumbers(form));
@@ -121,36 +126,24 @@ export default function ReportAI() {
     try {
       setLoading(true);
 
-      const res = await fetch("http://localhost:5000/api/knowledge", {
+      const res = await fetch("http://localhost:5000/api/ai/summary", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(numbers),
+        body: JSON.stringify({
+          name: form.name,
+          birth_date: form.birth_date,
+          numbers,
+        }),
       });
+
+      if (!res.ok) throw new Error("AI summary failed");
+
       const data = await res.json();
+      setSummary(data.text || "");
+      upsertHistory({ summary: data.text || "" });
 
-      const prompt = `
-Bạn là chuyên gia Thần số học Pitago người Việt.
-
-Họ tên: ${form.name}
-Ngày sinh: ${form.birth_date}
-
-Chỉ số:
-- Life Path: ${numbers.life_path}
-- Destiny: ${numbers.destiny}
-- Soul: ${numbers.soul}
-- Personality: ${numbers.personality}
-
-Kiến thức:
-${(data.knowledge || []).map((k) => `- ${k.content}`).join("\n")}
-
-Viết bản luận giải dễ hiểu, 3–5 đoạn.
-`;
-
-      const aiText = await callGemini(prompt);
-      setSummary(aiText);
-      upsertHistory({ summary: aiText });
     } catch {
-      alert("❌ Lỗi khi gọi AI");
+      alert("❌ Lỗi khi gọi AI tóm tắt");
     } finally {
       setLoading(false);
     }
@@ -162,12 +155,20 @@ Viết bản luận giải dễ hiểu, 3–5 đoạn.
 
     try {
       setLoading(true);
-      await fetch("http://localhost:5000/api/ai/full-report", {
+
+      const res = await fetch("http://localhost:5000/api/ai/full-report/pdf", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, numbers, summary }),
+        body: JSON.stringify({
+          ...form,
+          numbers,
+        }),
       });
-      alert("📧 PDF đã được gửi!");
+
+      if (!res.ok) throw new Error("Send PDF failed");
+
+      alert("📧 Báo cáo PDF đã được gửi về email!");
+
     } catch {
       alert("❌ Gửi PDF thất bại");
     } finally {
@@ -181,9 +182,6 @@ Viết bản luận giải dễ hiểu, 3–5 đoạn.
       <h2 style={{ textAlign: "center", fontSize: 30, fontWeight: 800 }}>
         📄 Báo cáo <span style={{ color: "#7a00ff" }}>Thần số học</span>
       </h2>
-      <p style={{ textAlign: "center", color: "#666", marginBottom: 30 }}>
-        Nhập thông tin → hệ thống tự tính → AI luận giải / gửi PDF
-      </p>
 
       {/* HISTORY */}
       <Card>
@@ -224,7 +222,7 @@ Viết bản luận giải dễ hiểu, 3–5 đoạn.
 
       {/* NUMBERS */}
       <Card>
-        <h3 style={{ marginBottom: 15 }}>🔢 Chỉ số (tự động tính)</h3>
+        <h3>🔢 Chỉ số (tự động tính)</h3>
         <Grid>
           <NumberBox label="Life Path" value={numbers.life_path} />
           <NumberBox label="Destiny" value={numbers.destiny} />
@@ -236,16 +234,17 @@ Viết bản luận giải dễ hiểu, 3–5 đoạn.
       {/* ACTIONS */}
       <div style={{ display: "flex", gap: 15, justifyContent: "center", margin: "30px 0" }}>
         <button onClick={handleSummary} disabled={!canRun || loading} style={btnPrimary}>
-          {loading ? "🤖 AI đang phân tích..." : "🔮 Xem luận giải AI"}
+          {loading ? "🤖 AI đang phân tích..." : "🔮 Xem tóm tắt AI"}
         </button>
         <button onClick={handleSendPDF} disabled={!canSend || loading} style={btnOutline}>
-          📧 Gửi báo cáo PDF
+          📧 Gửi báo cáo PDF đầy đủ
         </button>
       </div>
 
       {/* SUMMARY */}
       <Card>
-        <h3 style={{ marginBottom: 10 }}>✨ Kết quả luận giải</h3>
+        <h3>✨ Kết quả tóm tắt</h3>
+        
         {summary ? (
           <div style={{ whiteSpace: "pre-wrap", lineHeight: 1.8 }}>{summary}</div>
         ) : (
@@ -290,7 +289,7 @@ const NumberBox = ({ label, value }) => (
     background: "#faf7ff",
     border: "1px solid rgba(122,0,255,.15)"
   }}>
-    <div style={{ color: "#666", marginBottom: 6 }}>{label}</div>
+    <div style={{ color: "#666" }}>{label}</div>
     <div style={{ fontSize: 32, fontWeight: 800, color: "#7a00ff" }}>
       {value || "—"}
     </div>
@@ -303,7 +302,6 @@ const input = {
   padding: "12px 14px",
   borderRadius: 12,
   border: "1px solid #ddd",
-  outline: "none"
 };
 
 const btnPrimary = {
@@ -313,7 +311,6 @@ const btnPrimary = {
   background: "linear-gradient(to right,#7a00ff,#aa00ff)",
   color: "#fff",
   fontWeight: 700,
-  cursor: "pointer"
 };
 
 const btnOutline = {
@@ -323,5 +320,4 @@ const btnOutline = {
   background: "#fff",
   color: "#7a00ff",
   fontWeight: 700,
-  cursor: "pointer"
 };
