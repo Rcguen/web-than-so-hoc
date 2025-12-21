@@ -48,6 +48,13 @@ function Services() {
       link: "/report",
       color: "#1E90FF",
     },
+    {
+      title: "Tình Yêu & Mối Quan Hệ",
+      desc: "Tạo báo cáo đầy đủ các chỉ số thần số học của riêng bạn.",
+      img: "/assets/images/services-06.jpg",
+      link: "/love-page",
+      color: "#f81effff",
+    },
   ];
 
   return (

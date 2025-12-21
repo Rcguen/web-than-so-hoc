@@ -48,6 +48,7 @@ import FloatingChat from './components/chatbot/FloatingChat.jsx';
 import PaymentSuccess from './pages/PaymentSuccess.jsx';
 import PaymentFail from './pages/PaymentFail.jsx';
 import VNPayReturnProxy from './pages/VNPayReturnProxy.jsx';
+import LovePage from './pages/LovePage.jsx';
 
 function App() {
   const location = useLocation(); // ⭐ Giờ đã OK vì Router nằm ở index.js
@@ -84,6 +85,7 @@ function App() {
           <Route path="/birth-chart" element={<BirthChart />} />
           <Route path="/personal-year" element={<PersonalYear />} />
           <Route path="/report" element={<Report />} />
+          <Route path="/love-page" element={<LovePage />} />
           <Route path="/shop" element={<Shop />} />
           <Route path="/product/:id" element={<ProductDetail />} />
           <Route path="/cart" element={

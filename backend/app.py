@@ -22,10 +22,11 @@ from services.pdf_loader import load_pdf_pages
 from services.pdf_service import generate_numerology_pdf
 from services.mail_service import send_numerology_pdf
 from services.ai_service import build_summary_prompt, call_gemini, generate_summary_report
+
 from routes.knowledge_routes import knowledge_bp
 from routes.ai_routes import ai_bp
 from routes.numerology_routes import external_bp
-
+from routes.love_routes import love_bp
 
 
 # =====================================================
@@ -53,6 +54,7 @@ def create_app():
     app.register_blueprint(knowledge_bp)
     app.register_blueprint(ai_bp)
     app.register_blueprint(external_bp)
+    app.register_blueprint(love_bp)
 
     app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
     app.config["MAX_CONTENT_LENGTH"] = 2 * 1024 * 1024  # 2MB
