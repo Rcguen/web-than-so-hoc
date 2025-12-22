@@ -169,10 +169,10 @@ function OrderDetailUser() {
                 <input type="radio" name="paymentMethod" value="COD" checked={selectedMethod === "COD"} onChange={() => setSelectedMethod("COD")} />
                 <span>COD</span>
               </label>
-              <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              {/* <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <input type="radio" name="paymentMethod" value="MOMO" checked={selectedMethod === "MOMO"} onChange={() => setSelectedMethod("MOMO")} />
                 <span>MoMo</span>
-              </label>
+              </label> */}
               <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <input type="radio" name="paymentMethod" value="VNPAY" checked={selectedMethod === "VNPAY"} onChange={() => setSelectedMethod("VNPAY")} />
                 <span>VNPAY</span>

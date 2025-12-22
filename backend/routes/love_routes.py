@@ -1,11 +1,16 @@
 # love_routes.py
 from __future__ import annotations
 
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify,  send_file
 import requests
 from urllib.parse import quote
 
 from services.ai_service import call_gemini
+import os
+from services.pdf_service import generate_love_pdf
+from services.mail_service import send_numerology_pdf  # nếu em muốn gửi mail file PDF
+from services.love_pdf_service import generate_love_pdf
+from services.love_scoring import score_single_from_numbers, score_couple_compat
 
 
 love_bp = Blueprint("love", __name__, url_prefix="/api/love")
@@ -266,6 +271,179 @@ Viết theo cấu trúc:
 Giữ văn phong chuyên gia nhưng ấm áp.
 """.strip()
 
+def _num(x):
+    try:
+        if x is None or x == "":
+            return None
+        return int(x)
+    except Exception:
+        return None
+
+
+# Gợi ý nhóm “tương hợp” đơn giản theo numerology phổ biến (đủ dùng demo đồ án)
+# (không phải chân lý tuyệt đối, dùng như heuristic để ra “score” vẽ chart)
+_COMP_GROUPS = [
+    {1, 5, 7},   # độc lập / trải nghiệm / nội tâm
+    {2, 6, 9},   # tình cảm / gia đình / nhân văn
+    {3, 4, 8},   # biểu đạt / kỷ luật / thành tựu
+]
+
+def _same_group(a: int, b: int) -> bool:
+    for g in _COMP_GROUPS:
+        if a in g and b in g:
+            return True
+    return False
+
+
+def compute_overlap_and_scores(n1: dict, n2: dict) -> dict:
+    """
+    Output:
+    {
+      "scores": {"communication": 0-100, "emotion":..., "commitment":..., "growth":..., "overall":...},
+      "overlaps": ["...", "..."],
+      "notes": ["..."]
+    }
+    """
+    a_lp = _num(n1.get("life_path"))
+    a_de = _num(n1.get("destiny"))
+    a_so = _num(n1.get("soul"))
+    a_pe = _num(n1.get("personality"))
+
+    b_lp = _num(n2.get("life_path"))
+    b_de = _num(n2.get("destiny"))
+    b_so = _num(n2.get("soul"))
+    b_pe = _num(n2.get("personality"))
+
+    overlaps = []
+    notes = []
+
+    # 1) Life Path ↔ Love (Soul) chồng chéo: “đường đời” & “nhu cầu tình cảm”
+    # - Nếu LP của người A gần/đồng nhóm Soul của người B => dễ hiểu nhu cầu yêu
+    # - Nếu lệch nhóm => dễ “lệch kỳ vọng”
+    def lp_soul_overlap(label, lp, soul):
+        if lp is None or soul is None:
+            return
+        if lp == soul:
+            overlaps.append(f"{label}: Life Path trùng Soul → rất dễ đồng cảm về nhu cầu yêu.")
+        elif _same_group(lp, soul):
+            overlaps.append(f"{label}: Life Path cùng nhóm Soul → khá dễ hiểu nhau về tình cảm.")
+        else:
+            overlaps.append(f"{label}: Life Path khác nhóm Soul → dễ lệch kỳ vọng khi yêu (cần giao tiếp rõ).")
+
+    lp_soul_overlap("A→B", a_lp, b_so)
+    lp_soul_overlap("B→A", b_lp, a_so)
+
+    # 2) Personality ↔ Communication: ảnh hưởng “cách thể hiện ra ngoài”
+    # Cùng nhóm Personality => nói chuyện “hợp vibe”
+    comm = 50
+    if a_pe is not None and b_pe is not None:
+        if a_pe == b_pe:
+            comm = 85
+            overlaps.append("Personality trùng → phong cách giao tiếp/ấn tượng bên ngoài khá hợp nhau.")
+        elif _same_group(a_pe, b_pe):
+            comm = 72
+            overlaps.append("Personality cùng nhóm → giao tiếp tương đối hợp, ít hiểu lầm.")
+        else:
+            comm = 55
+            overlaps.append("Personality khác nhóm → dễ hiểu nhầm ý nhau, nên thống nhất cách nói chuyện.")
+
+    # 3) Emotion: Soul ↔ Soul (nhu cầu tình cảm)
+    emo = 50
+    if a_so is not None and b_so is not None:
+        if a_so == b_so:
+            emo = 88
+            overlaps.append("Soul trùng → nhu cầu tình cảm giống nhau, dễ thấy “được yêu đúng cách”.")
+        elif _same_group(a_so, b_so):
+            emo = 74
+            overlaps.append("Soul cùng nhóm → cảm xúc tương đối hoà hợp.")
+        else:
+            emo = 58
+            overlaps.append("Soul khác nhóm → cách cần được yêu khác nhau, cần học ngôn ngữ tình yêu của nhau.")
+
+    # 4) Commitment: Destiny ↔ Destiny (định hướng/cam kết)
+    comit = 50
+    if a_de is not None and b_de is not None:
+        if a_de == b_de:
+            comit = 82
+            overlaps.append("Destiny trùng → định hướng cam kết/giá trị sống khá đồng điệu.")
+        elif _same_group(a_de, b_de):
+            comit = 70
+            overlaps.append("Destiny cùng nhóm → mục tiêu chung tương đối hợp.")
+        else:
+            comit = 56
+            overlaps.append("Destiny khác nhóm → ưu tiên cuộc sống khác nhau, cần “thoả thuận” rõ ràng.")
+
+    # 5) Growth: LP ↔ LP (cách lớn lên / bài học đời)
+    growth = 50
+    if a_lp is not None and b_lp is not None:
+        if a_lp == b_lp:
+            growth = 80
+            overlaps.append("Life Path trùng → cùng nhịp phát triển, dễ đồng hành dài hạn.")
+        elif _same_group(a_lp, b_lp):
+            growth = 68
+            overlaps.append("Life Path cùng nhóm → hỗ trợ nhau phát triển khá ổn.")
+        else:
+            growth = 57
+            overlaps.append("Life Path khác nhóm → khác nhịp sống, cần tôn trọng không gian cá nhân.")
+
+    # Overall: weighted
+    overall = round(comm * 0.22 + emo * 0.28 + comit * 0.22 + growth * 0.28)
+
+    # Clamp
+    def clamp(x): 
+        return max(0, min(100, int(round(x))))
+
+    scores = {
+        "communication": clamp(comm),
+        "emotion": clamp(emo),
+        "commitment": clamp(comit),
+        "growth": clamp(growth),
+        "overall": clamp(overall),
+    }
+
+    if scores["overall"] >= 80:
+        notes.append("Mức tương hợp tổng quan: Cao.")
+    elif scores["overall"] >= 60:
+        notes.append("Mức tương hợp tổng quan: Trung bình – khá.")
+    else:
+        notes.append("Mức tương hợp tổng quan: Thấp – cần nhiều kỹ năng giao tiếp & thấu hiểu.")
+
+    return {"scores": scores, "overlaps": overlaps[:12], "notes": notes}
+
+def _score_pair(a: dict, b: dict) -> dict:
+    """
+    Score đơn giản (0-100) dựa trên mức "gần nhau" của các chỉ số.
+    Em có thể tinh chỉnh weight theo ý.
+    """
+    def norm_diff(x, y):
+        try:
+            x = int(x); y = int(y)
+            d = abs(x - y)
+            return max(0, 100 - d * 12)  # lệch 1 -> 88, lệch 2 -> 76 ...
+        except Exception:
+            return 50
+
+    # các trục
+    lp = norm_diff(a.get("life_path"), b.get("life_path"))
+    soul = norm_diff(a.get("soul"), b.get("soul"))
+    dest = norm_diff(a.get("destiny"), b.get("destiny"))
+    pers = norm_diff(a.get("personality"), b.get("personality"))
+
+    emotional = int((soul * 0.65 + pers * 0.35))
+    communication = int((dest * 0.55 + pers * 0.45))
+    stability = int((lp * 0.60 + dest * 0.40))
+    chemistry = int((soul * 0.45 + lp * 0.35 + pers * 0.20))
+
+    overall = int((emotional + communication + stability + chemistry) / 4)
+
+    return {
+        "overall": overall,
+        "emotional": emotional,
+        "communication": communication,
+        "stability": stability,
+        "chemistry": chemistry,
+        "overlap_love_lifepath": int((lp * 0.55 + soul * 0.45)),  # “chồng chéo” Love vs Life Path
+    }
 
 # =========================
 # Routes
@@ -301,6 +479,7 @@ def love_summary():
     esgoo_text = _compact_esgoo_for_prompt(esgoo_raw)
 
     # 3) prompt
+    scores_a = score_single_from_numbers(numbers)
     prompt = build_love_prompt_single(
         name=name,
         birth_date=birth_date,
@@ -317,6 +496,7 @@ def love_summary():
 
     return jsonify({
         "text": text,
+        "scores_a":scores_a,
         "knowledge_used": len(knowledge),
         "esgoo_used": bool(esgoo_raw),
     })
@@ -379,6 +559,10 @@ def love_compatibility():
     esgoo_2 = _compact_esgoo_for_prompt(esgoo_raw_2)
 
     # prompt
+    scores_a = score_single_from_numbers(p1_ok["numbers"])
+    scores_b = score_single_from_numbers(p2_ok["numbers"])
+    compat_scores = score_couple_compat(scores_a, scores_b)
+
     prompt = build_love_prompt_couple(
         p1=p1_ok,
         p2=p2_ok,
@@ -389,8 +573,214 @@ def love_compatibility():
 
     text = call_gemini(prompt, temperature=0.35, max_tokens=1100, timeout=70) or ""
 
+        # 0) compute chartable scores + overlap
+    metric = compute_overlap_and_scores(p1_ok["numbers"], p2_ok["numbers"])
+    scores = metric["scores"]
+    overlaps = metric["overlaps"]
+    notes = metric["notes"]
+
+    # Chart data (Radar/Bar)
+    chart = [
+        {"metric": "Giao tiếp", "value": scores["communication"]},
+        {"metric": "Cảm xúc", "value": scores["emotion"]},
+        {"metric": "Cam kết", "value": scores["commitment"]},
+        {"metric": "Phát triển", "value": scores["growth"]},
+    ]
+
+    # 1) AI giải thích “vì sao hợp/không hợp”
+    #    => ép AI phải dựa trên: score + overlap + knowledge + esgoo
+    explain_prompt = f"""
+Bạn là chuyên gia Thần số học Pitago (Việt Nam).
+
+BẮT BUỘC:
+- Trả lời tiếng Việt
+- Dựa trên: (1) Điểm số, (2) Overlap, (3) Evidence sách, (4) Esgoo
+- Nếu evidence tiếng Anh -> diễn giải sang Việt
+- Không bịa chỉ số mới.
+
+ĐIỂM SỐ TƯƠNG HỢP (0-100):
+- Giao tiếp: {scores["communication"]}
+- Cảm xúc: {scores["emotion"]}
+- Cam kết: {scores["commitment"]}
+- Phát triển: {scores["growth"]}
+- Tổng quan: {scores["overall"]}
+
+OVERLAP (điểm chồng chéo Love ↔ Life Path):
+{chr(10).join("- " + x for x in overlaps)}
+
+EVIDENCE SÁCH:
+{knowledge_text}
+
+ESGOO A:
+{esgoo_1}
+
+ESGOO B:
+{esgoo_2}
+
+YÊU CẦU OUTPUT:
+1) Kết luận 3-5 câu về mức độ hợp (bám theo "Tổng quan")
+2) “Vì sao hợp” (3-6 bullet, mỗi bullet phải liên hệ score/overlap)
+3) “Vì sao dễ không hợp” (3-6 bullet, mỗi bullet phải liên hệ score/overlap)
+4) 5 gợi ý thực tế để cải thiện (ngắn gọn, hành động được)
+""".strip()
+
+    ai_reason = call_gemini(explain_prompt, temperature=0.25, max_tokens=900, timeout=60) or ""
+
+
     return jsonify({
-        "text": text,
+        "text": text,  # bản compatibility “đầy đủ”
+        "reason": ai_reason,  # phần AI giải thích vì sao hợp/không hợp
+        "scores": scores,  
+           "scores_a":scores_a,
+              "scores_b":scores_b,   # dùng cho badge + tổng quan
+        "chart": chart,       # dùng cho radar/bar
+        "overlaps": overlaps, # show UI “Love + LifePath chồng chéo”
+        "notes": notes,
         "knowledge_used": len(knowledge[:limit]),
         "esgoo_used": bool(esgoo_raw_1 or esgoo_raw_2),
     })
+
+
+@love_bp.route("/export-pdf", methods=["POST"])
+def love_export_pdf():
+    """
+    Body:
+    {
+      "mode": "single" | "couple",
+      "person_a": {...}   # giống compatibility
+      "person_b": {...}   # optional
+      "email": "..."      # optional - có thì gửi mail
+      "title": "..."      # optional
+      "ai_text": "..."    # optional - nếu FE đã có
+      "ai_reason": "..."  # optional - nếu FE đã có
+      "scores": {...}     # optional
+      "overlaps": [...]   # optional
+    }
+    """
+    data = request.json or {}
+    mode = (data.get("mode") or "single").strip().lower()
+    title = data.get("title") or ("Love Report (Couple)" if mode == "couple" else "Love Report (Single)")
+    email = (data.get("email") or "").strip()
+
+    pA = data.get("person_a") or {}
+    pB = data.get("person_b") or None
+
+    # nếu FE chưa truyền ai_text, fallback minimal
+    ai_text = (data.get("ai_text") or "").strip()
+    ai_reason = (data.get("ai_reason") or "").strip() or None
+
+    scores = data.get("scores") or None
+    overlaps = data.get("overlaps") or None
+
+    # Validate
+    if not isinstance(pA, dict) or not pA.get("name") or not pA.get("birth_date") or not isinstance(pA.get("numbers"), dict):
+        return jsonify({"error": "Thiếu person_a"}), 400
+    if mode == "couple":
+        if not isinstance(pB, dict) or not pB.get("name") or not pB.get("birth_date") or not isinstance(pB.get("numbers"), dict):
+            return jsonify({"error": "Thiếu person_b"}), 400
+
+    # Nếu không có ai_text -> tạo nhanh 1 prompt “xuất PDF”
+    if not ai_text:
+        ai_text = "Không có nội dung AI được truyền vào (ai_text)."
+
+    out_dir = os.path.join(os.getcwd(), "reports")
+    pdf_path = generate_love_pdf(
+        out_dir=out_dir,
+        title=title,
+        person_a=pA,
+        person_b=pB if mode == "couple" else None,
+        scores=scores,
+        overlaps=overlaps,
+        ai_text=ai_text,
+        ai_reason=ai_reason
+    )
+
+    # Gửi mail nếu có email
+    if email:
+        # dùng mail_service hiện tại (đang check file tồn tại) => ok
+        send_numerology_pdf(to_email=email, full_name=pA.get("name") or "Love Report", pdf_path=pdf_path)
+
+    return jsonify({
+        "message": "OK",
+        "pdf_path": pdf_path,
+        "emailed": bool(email),
+    })
+
+@love_bp.route("/pdf", methods=["POST"])
+def love_export_pdf_for_couple():
+    """
+    Export PDF cho tab couple (2 người) vì yêu cầu em có chart/so sánh.
+    Body:
+    {
+      "person_a": { "name": "...", "birth_date": "...", "numbers": {...} },
+      "person_b": { "name": "...", "birth_date": "...", "numbers": {...} },
+      "limit": 6,
+      "use_esgoo": true
+    }
+    """
+    data = request.json or {}
+    p1 = data.get("person_a") or {}
+    p2 = data.get("person_b") or {}
+    limit = _safe_int(data.get("limit")) or 6
+    use_esgoo = bool(data.get("use_esgoo", True))
+
+    # validate
+    def _validate_person(p: dict, label: str):
+        name = _safe_str(p.get("name"))
+        birth_date = _safe_str(p.get("birth_date"))
+        numbers = p.get("numbers") or {}
+        if not name or not birth_date or not isinstance(numbers, dict):
+            return None, f"Thiếu dữ liệu {label} (name/birth_date/numbers)"
+        return {"name": name, "birth_date": birth_date, "numbers": numbers}, None
+
+    p1_ok, err1 = _validate_person(p1, "person_a")
+    p2_ok, err2 = _validate_person(p2, "person_b")
+    if err1 or err2:
+        return jsonify({"error": err1 or err2}), 400
+
+    # knowledge
+    k1 = _fetch_knowledge_by_numbers(p1_ok["numbers"], limit=max(3, limit // 2))
+    k2 = _fetch_knowledge_by_numbers(p2_ok["numbers"], limit=max(3, limit // 2))
+    knowledge = (k1 + k2)[:limit]
+    knowledge_text = _format_knowledge(knowledge)
+
+    # esgoo
+    esgoo_raw_1 = _fetch_esgoo(p1_ok["name"], p1_ok["birth_date"]) if use_esgoo else None
+    esgoo_raw_2 = _fetch_esgoo(p2_ok["name"], p2_ok["birth_date"]) if use_esgoo else None
+    esgoo_1 = _compact_esgoo_for_prompt(esgoo_raw_1)
+    esgoo_2 = _compact_esgoo_for_prompt(esgoo_raw_2)
+
+    # prompt: ép AI giải thích "vì sao hợp/không hợp"
+    prompt = build_love_prompt_couple(
+        p1=p1_ok,
+        p2=p2_ok,
+        knowledge_text=knowledge_text,
+        esgoo1=esgoo_1,
+        esgoo2=esgoo_2,
+    ) + "\n\nYÊU CẦU BỔ SUNG: Hãy giải thích rõ *vì sao* hợp/không hợp theo từng bullet, bám evidence."
+
+    ai_text = call_gemini(prompt, temperature=0.3, max_tokens=1200, timeout=70) or ""
+
+    scores = _score_pair(p1_ok["numbers"], p2_ok["numbers"])
+
+    pdf_path = generate_love_pdf(
+        title="LOVE NUMEROLOGY REPORT",
+        subtitle="RAG (Books) + ESGOO + AI (Vietnamese explanation)",
+        meta_left=[
+            f"A: {p1_ok['name']}",
+            f"Birth: {p1_ok['birth_date']}",
+            f"LP/Dest/Soul/Pers: {p1_ok['numbers'].get('life_path')}/{p1_ok['numbers'].get('destiny')}/{p1_ok['numbers'].get('soul')}/{p1_ok['numbers'].get('personality')}",
+            f"ESGOO: {'ON' if esgoo_raw_1 else 'OFF'}",
+        ],
+        meta_right=[
+            f"B: {p2_ok['name']}",
+            f"Birth: {p2_ok['birth_date']}",
+            f"LP/Dest/Soul/Pers: {p2_ok['numbers'].get('life_path')}/{p2_ok['numbers'].get('destiny')}/{p2_ok['numbers'].get('soul')}/{p2_ok['numbers'].get('personality')}",
+            f"Books used: {len(knowledge)}",
+        ],
+        scores=scores,
+        ai_text=ai_text,
+        filename_hint=f"love_{p1_ok['name']}_{p2_ok['name']}",
+    )
+
+    return send_file(pdf_path, as_attachment=True, download_name=os.path.basename(pdf_path))

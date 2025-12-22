@@ -11,6 +11,8 @@ function Checkout() {
   const { user, logout } = useAuth();
   const cartCtx = useCart?.() || {};
   const clearCartFromCtx = cartCtx.clearCart;
+  const [paymentMethod, setPaymentMethod] = useState("COD");
+
 
   /* ================= CART ================= */
   const [cart, setCart] = useState([]);
@@ -73,6 +75,9 @@ function Checkout() {
       return;
     }
 
+
+
+
     const confirm = await Swal.fire({
       title: "Xác nhận đặt hàng?",
       text: `Tổng thanh toán: ${total.toLocaleString("vi-VN")} đ`,
@@ -101,6 +106,7 @@ function Checkout() {
         ward: shipping.ward,
         shipping_fee: ship,
         total_price: total,
+        payment_method: paymentMethod,
       };
 
       const token = localStorage.getItem("token");
@@ -372,6 +378,31 @@ function Checkout() {
                   {total.toLocaleString("vi-VN")} đ
                 </span>
               </div>
+                <div style={{ marginTop: 20 }}>
+  <label style={{ display: "block", marginBottom: 8, fontWeight: 600 }}>
+    Phương thức thanh toán
+  </label>
+
+  <label style={{ display: "flex", gap: 8, marginBottom: 6 }}>
+    <input
+      type="radio"
+      value="COD"
+      checked={paymentMethod === "COD"}
+      onChange={() => setPaymentMethod("COD")}
+    />
+    Thanh toán khi nhận hàng (COD)
+  </label>
+
+  <label style={{ display: "flex", gap: 8 }}>
+    <input
+      type="radio"
+      value="WALLET"
+      checked={paymentMethod === "WALLET"}
+      onChange={() => setPaymentMethod("WALLET")}
+    />
+    Thanh toán bằng ví
+  </label>
+</div>
 
               <button className="checkout-btn" onClick={handlePlaceOrder}>
                 Xác nhận đặt hàng

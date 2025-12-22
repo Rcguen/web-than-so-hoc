@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { toast } from "react-toastify";
+import { useAuth } from "../context/AuthContext";
 
 function Register() {
   const [full_name, setFullName] = useState("");
@@ -8,7 +10,8 @@ function Register() {
   const [gender, setGender]       = useState("Khác");
   const [error, setError]         = useState("");
   const navigate = useNavigate();
-
+  const { login } = useAuth();
+  
   const handleRegister = async (e) => {
     e.preventDefault();
     setError("");
@@ -23,8 +26,10 @@ function Register() {
         setError(data.message || "Đăng ký thất bại");
         return;
       }
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify(data.user));
+      login(data.user, data.token);
+
+      // ✅ Toast thành công
+      toast.success(`🎉 Chào mừng ${data.user.full_name}! Tài khoản đã được tạo.`);
       navigate("/");
     } catch {
       setError("Lỗi kết nối server!");

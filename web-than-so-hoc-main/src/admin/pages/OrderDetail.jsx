@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import "./orderDetail.css";
+
 export default function OrderDetail() {
-  // Read route params robustly: prefer `order_id` but support `id` as fallback
-  const params = useParams();
-  const order_id = params.order_id || params.id;
+  const { order_id } = useParams();
   const navigate = useNavigate();
 
   const [order, setOrder] = useState(null);
@@ -13,106 +12,95 @@ export default function OrderDetail() {
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState("");
 
-  // ============================
-  // 📌 Tải chi tiết đơn hàng
-  // ============================
+  // =========================
+  // FETCH ORDER DETAIL
+  // =========================
   const fetchOrderDetail = async () => {
     try {
-      console.log("OrderDetail: fetching order_id=" + order_id);
       const token = localStorage.getItem("token");
-      const res = await axios.get(`http://127.0.0.1:5000/api/admin/orders/${encodeURIComponent(order_id)}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {}
-      });
+      const res = await axios.get(
+        `http://127.0.0.1:5000/api/admin/orders/${order_id}`,
+        {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        }
+      );
+
       setOrder(res.data.order);
       setItems(res.data.items);
       setStatus(res.data.order.order_status);
       setLoading(false);
     } catch (err) {
       console.error(err);
-      // Provide clearer error messages for auth/forbidden/not-found
-      if (err.response) {
-        const status = err.response.status;
-        if (status === 401) {
-          alert("Vui lòng đăng nhập bằng tài khoản admin để xem chi tiết");
-          navigate("/login");
-          return;
-        }
-        if (status === 403) {
-          alert("Bạn không có quyền truy cập trang này");
-          navigate("/admin/orders");
-          return;
-        }
-        if (status === 404) {
-          alert("Không tìm thấy đơn hàng này");
-          navigate("/admin/orders");
-          return;
-        }
-      }
-
-      alert("Không thể tải chi tiết đơn hàng!");
+      alert("Không thể tải chi tiết đơn hàng");
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    // Wait until route param becomes available. Sometimes useParams is undefined for a render cycle.
-    if (typeof order_id === "undefined" || order_id === null || order_id === "undefined") {
-      console.log("OrderDetail: waiting for order_id param...", order_id);
-      return;
-    }
-
     fetchOrderDetail();
   }, [order_id]);
 
-  // ============================
-  // 📌 Cập nhật trạng thái đơn hàng
-  // ============================
+  // =========================
+  // UPDATE STATUS
+  // =========================
   const updateStatus = async () => {
     try {
       const token = localStorage.getItem("token");
-      await axios.put(`http://127.0.0.1:5000/api/admin/orders/${order_id}/status`, {
-        status,
-      }, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {}
-      });
-
-      alert("Cập nhật trạng thái thành công!");
-
-      // ⬇ Reload lại chi tiết đơn hàng để cập nhật UI
-      fetchOrderDetail();
-
+      await axios.put(
+        `http://127.0.0.1:5000/api/admin/orders/${order_id}/status`,
+        { status },
+        {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        }
+      );
+      alert("Cập nhật trạng thái thành công");
     } catch (err) {
       console.error(err);
-      alert("Lỗi khi cập nhật trạng thái");
+      alert("Không thể cập nhật trạng thái");
     }
   };
 
-  if (loading) return <div className="admin-loading">Đang tải dữ liệu...</div>;
-  if (!order) return <div className="admin-loading">Không tìm thấy đơn hàng</div>;
+  if (loading) {
+    return <div className="admin-loading">Đang tải chi tiết đơn hàng...</div>;
+  }
+
+  if (!order) {
+    return <div className="admin-loading">Không tìm thấy đơn hàng</div>;
+  }
 
   return (
-    <div className="order-detail-page">
+    <div className="order-detail-wrapper">
+      <button className="back-btn" onClick={() => navigate(-1)}>
+        ← Quay lại
+      </button>
 
-      {/* ============================ */}
-      {/* 📌 Title */}
-      {/* ============================ */}
-      <h1 className="page-title">Chi tiết đơn hàng #{order.order_id}</h1>
+      <h1 className="page-title">📦 Chi tiết đơn hàng #{order.order_id}</h1>
 
-      {/* ============================ */}
-      {/* 📌 THÔNG TIN KHÁCH HÀNG */}
-      {/* ============================ */}
-      <section className="customer-info">
-        <h2>Thông tin khách hàng</h2>
+      {/* ================= CUSTOMER INFO ================= */}
+      <section className="card">
+        <h2>👤 Thông tin khách hàng</h2>
 
-        <p><b>Họ tên:</b> {order.customer_name}</p>
-        <p><b>SĐT:</b> {order.customer_phone}</p>
-        <p><b>Địa chỉ:</b> {order.customer_address}</p>
-        <p><b>Ghi chú:</b> {order.note || "Không có"}</p>
-        <p><b>Ngày đặt:</b> {new Date(order.created_at).toLocaleString("vi-VN")}</p>
+        <div className="info-grid">
+          <p>
+            <b>Họ tên:</b> {order.customer_name}
+          </p>
+          <p>
+            <b>SĐT:</b> {order.customer_phone}
+          </p>
+          <p>
+            <b>Địa chỉ:</b> {order.customer_address}
+          </p>
+          <p>
+            <b>Ngày đặt:</b>{" "}
+            {new Date(order.created_at).toLocaleString("vi-VN")}
+          </p>
+        </div>
 
-        {/* Trạng thái đơn hàng */}
+        <p className="note">
+          <b>Ghi chú:</b> {order.note || "Không có"}
+        </p>
+
         <div className="status-box">
-          <label><b>Trạng thái đơn hàng:</b></label>
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value)}
@@ -122,61 +110,64 @@ export default function OrderDetail() {
             <option value="processing">⚙️ Đang xử lý</option>
             <option value="shipping">🚚 Đang giao</option>
             <option value="completed">✅ Hoàn thành</option>
+            <option value="cancelled">❌ Đã hủy</option>
           </select>
 
           <button className="save-btn" onClick={updateStatus}>
-            Lưu trạng thái
+            💾 Lưu trạng thái
           </button>
         </div>
       </section>
 
-      {/* ============================ */}
-      {/* 📌 DANH SÁCH SẢN PHẨM */}
-      {/* ============================ */}
-      <section className="product-list">
-        <h2>Sản phẩm</h2>
+      {/* ================= ORDER ITEMS ================= */}
+      <section className="card">
+        <h2>🛒 Sản phẩm trong đơn</h2>
 
-        <table className="order-table">
+        <table className="admin-table">
           <thead>
             <tr>
-              <th>Ảnh</th>
-              <th>Sản phẩm</th>
+              <th>#</th>
+              <th>Tên sản phẩm</th>
               <th>Giá</th>
               <th>Số lượng</th>
-              <th>Tổng</th>
+              <th>Thành tiền</th>
             </tr>
           </thead>
 
           <tbody>
             {items.map((item, index) => (
-              <tr key={index}>
-                <td>
-                  <img
-                    src={item.image ? `http://127.0.0.1:5000${item.image}` : "/no-image.png"}
-                    alt=""
-                    className="item-img"
-                  />
-                </td>
-
+              <tr key={item.id || index}>
+                <td>{index + 1}</td>
                 <td>{item.product_name}</td>
-                <td>{item.price.toLocaleString()} đ</td>
+                <td>{Number(item.price).toLocaleString()} đ</td>
                 <td>{item.quantity}</td>
-                <td>{(item.price * item.quantity).toLocaleString()} đ</td>
+                <td>
+                  {(item.price * item.quantity).toLocaleString()} đ
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
-
-        <h2 className="total-price">
-          Tổng đơn: {order.total_price.toLocaleString()} đ
-        </h2>
-
       </section>
 
-      <button className="back-btn" onClick={() => navigate("/admin/orders")}>
-        ← Quay lại
-      </button>
+      {/* ================= TOTAL ================= */}
+      <section className="card total-card">
+        <h2 className="total-price">
+          💰 Tổng đơn: {Number(order.total_price).toLocaleString()} đ
+        </h2>
 
+        <p>
+          <b>Phương thức thanh toán:</b>{" "}
+          {order.payment_method || "COD"}
+        </p>
+
+        <p>
+          <b>Trạng thái thanh toán:</b>{" "}
+          {order.payment_status === "PAID"
+            ? "Đã thanh toán"
+            : "Chưa thanh toán"}
+        </p>
+      </section>
     </div>
   );
 }

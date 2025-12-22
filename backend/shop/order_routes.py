@@ -8,6 +8,7 @@ order_routes = Blueprint("order_routes", __name__)
 # 1. USER – TẠO ĐƠN HÀNG + THANH TOÁN (COD / MOMO / VNPAY)
 # ====================================================
 @order_routes.post("/orders")
+@order_routes.post("/orders")
 def create_order():
     data = request.get_json() or {}
     print("create_order data:", data)
@@ -20,12 +21,10 @@ def create_order():
     items            = data.get("items") or []
     payment_method   = data.get("payment_method", "COD")
 
-    # shipping address
     city     = data.get("city")
     district = data.get("district")
     ward     = data.get("ward")
 
-    # ---------- validate ----------
     if not customer_name or not customer_phone or not customer_address:
         return jsonify({"message": "Thiếu thông tin người nhận"}), 400
 
@@ -36,14 +35,14 @@ def create_order():
         conn = get_db_connection()
         cur  = conn.cursor(dictionary=True)
 
-        # ---------- 1️⃣ TÍNH SUBTOTAL ----------
+        # ---------- 1️⃣ SUBTOTAL ----------
         subtotal = 0
         for it in items:
             price = float(it.get("price", 0))
-            qty   = int(it.get("qty", 0))
+            qty   = int(it.get("quantity", 0))
             subtotal += price * qty
 
-        # ---------- 2️⃣ LẤY PHÍ SHIP ----------
+        # ---------- 2️⃣ SHIPPING ----------
         shipping_fee = 0
         if city and district and ward:
             cur.execute("""
@@ -51,34 +50,52 @@ def create_order():
                 WHERE city=%s AND district=%s AND ward=%s
                 LIMIT 1
             """, (city, district, ward))
-
             row = cur.fetchone()
             if row:
                 shipping_fee = float(row["price"])
 
-        # ---------- 3️⃣ TỔNG TIỀN ----------
+        # ---------- 3️⃣ TOTAL ----------
         total_price = subtotal + shipping_fee
 
-        # ---------- 4️⃣ TRẠNG THÁI THANH TOÁN ----------
+        # ---------- 4️⃣ PAYMENT METHOD ----------
+        payment_status = "UNPAID"
+
         if payment_method in ["MOMO", "VNPAY"]:
             payment_status = "PENDING_PAYMENT"
-        else:
-            payment_status = "UNPAID"
 
-        # ---------- 5️⃣ INSERT ORDERS ----------
+        # 👉 WALLET PAYMENT
+        if payment_method == "WALLET":
+            cur.execute(
+                "SELECT balance FROM wallets WHERE user_id=%s FOR UPDATE",
+                (user_id,)
+            )
+            wallet = cur.fetchone()
+            if not wallet or float(wallet["balance"]) < total_price:
+                conn.rollback()
+                cur.close(); conn.close()
+                return jsonify({"message": "Số dư ví không đủ"}), 400
+
+            # trừ tiền ví
+            cur.execute(
+                "UPDATE wallets SET balance = balance - %s WHERE user_id=%s",
+                (total_price, user_id)
+            )
+
+            # lưu lịch sử ví
+            cur.execute("""
+                INSERT INTO wallet_transactions (user_id, amount, type, description)
+                VALUES (%s,%s,'PAYMENT','Thanh toán đơn hàng')
+            """, (user_id, total_price))
+
+            payment_status = "PAID"
+
+        # ---------- 5️⃣ INSERT ORDER ----------
         cur.execute("""
             INSERT INTO orders (
-                user_id,
-                total_price,
-                shipping_fee,
-                order_status,
-                payment_method,
-                payment_status,
-                created_at,
-                customer_name,
-                customer_phone,
-                customer_address,
-                note
+                user_id, total_price, shipping_fee,
+                order_status, payment_method, payment_status,
+                created_at, customer_name, customer_phone,
+                customer_address, note
             )
             VALUES (%s,%s,%s,'pending',%s,%s,NOW(),%s,%s,%s,%s)
         """, (
@@ -95,13 +112,12 @@ def create_order():
 
         order_id = cur.lastrowid
 
-        # ---------- 6️⃣ INSERT ORDER ITEMS & REDUCE QUANTITY ATOMICALLY ----------
+        # ---------- 6️⃣ ORDER ITEMS + STOCK ----------
         for it in items:
             product_id = it.get("product_id")
-            qty = int(it.get("qty", 0))
+            qty   = int(it.get("quantity", 0))
             price = float(it.get("price", 0))
 
-            # Attempt to decrement available quantity atomically
             cur.execute("""
                 UPDATE products
                 SET quantity = quantity - %s
@@ -109,42 +125,38 @@ def create_order():
             """, (qty, product_id, qty))
 
             if cur.rowcount == 0:
-                # Rollback and return informative message
-                cur.execute("SELECT product_name, quantity, stock FROM products WHERE product_id=%s", (product_id,))
+                cur.execute(
+                    "SELECT product_name FROM products WHERE product_id=%s",
+                    (product_id,)
+                )
                 prod = cur.fetchone()
                 conn.rollback()
                 cur.close(); conn.close()
-                prod_name = prod.get("product_name") if prod else str(product_id)
-                return jsonify({"message": f"Không đủ số lượng tồn kho cho sản phẩm {prod_name}"}), 400
+                name = prod["product_name"] if prod else str(product_id)
+                return jsonify({"message": f"Không đủ tồn kho cho {name}"}), 400
 
-            # Insert order item
             cur.execute("""
                 INSERT INTO order_items (order_id, product_id, quantity, price)
                 VALUES (%s,%s,%s,%s)
-            """, (
-                order_id,
-                product_id,
-                qty,
-                price
-            ))
+            """, (order_id, product_id, qty, price))
 
-            # After decrement, if both quantity and stock are zero, hide the product
-            cur.execute("SELECT quantity, stock FROM products WHERE product_id=%s", (product_id,))
-            pr = cur.fetchone()
-            q = pr.get("quantity", 0) if pr else 0
-            s = pr.get("stock", 0) if pr else 0
-            if q <= 0 and s <= 0:
-                cur.execute("UPDATE products SET is_active=0 WHERE product_id=%s", (product_id,))
+            cur.execute(
+                "SELECT quantity FROM products WHERE product_id=%s",
+                (product_id,)
+            )
+            p = cur.fetchone()
+            if p and p["quantity"] <= 0:
+                cur.execute(
+                    "UPDATE products SET is_active=0 WHERE product_id=%s",
+                    (product_id,)
+                )
 
         conn.commit()
-        cur.close()
-        conn.close()
+        cur.close(); conn.close()
 
         return jsonify({
             "status": "success",
             "order_id": order_id,
-            "subtotal": subtotal,
-            "shipping_fee": shipping_fee,
             "total_price": total_price,
             "payment_method": payment_method,
             "payment_status": payment_status

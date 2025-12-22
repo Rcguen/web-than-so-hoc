@@ -1,43 +1,42 @@
-import { useEffect, useRef } from "react";
-import { Chart } from "chart.js";
+import { Bar } from "react-chartjs-2";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Tooltip,
+  Legend,
+} from "chart.js";
 
-export default function LifePathChart({ stats }) {
-  const canvasRef = useRef(null);
-  const chartRef = useRef(null);
+ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
-  useEffect(() => {
-    if (!canvasRef.current || !stats || stats.length === 0) return;
+export default function LifePathChart({ stats = [] }) {
+  if (!stats.length) {
+    return <p>Không có dữ liệu</p>;
+  }
 
-    // 🔥 DESTROY chart cũ
-    if (chartRef.current) {
-      chartRef.current.destroy();
-    }
+  const labels = stats.map((i) => i.life_path_number);
+  const values = stats.map((i) => i.total);
 
-    chartRef.current = new Chart(canvasRef.current, {
-      type: "bar",
-      data: {
-        labels: stats.map(s => s.life_path_number),
-        datasets: [
-          {
-            label: "Số lượt tra cứu",
-            data: stats.map(s => s.total),
-            backgroundColor: "#6366f1",
-          },
-        ],
+  const data = {
+    labels,
+    datasets: [
+      {
+        label: "Số lượt tra cứu",
+        data: values,
+        backgroundColor: "#6366f1",
+        borderRadius: 8,
       },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-      },
-    });
+    ],
+  };
 
-    return () => {
-      if (chartRef.current) {
-        chartRef.current.destroy();
-        chartRef.current = null;
-      }
-    };
-  }, [stats]);
+  const options = {
+    responsive: true,
+    maintainAspectRatio: false, // 🔥 RẤT QUAN TRỌNG
+    scales: {
+      y: { beginAtZero: true },
+    },
+  };
 
-  return <canvas ref={canvasRef} height={300}></canvas>;
+  return <Bar data={data} options={options} />;
 }

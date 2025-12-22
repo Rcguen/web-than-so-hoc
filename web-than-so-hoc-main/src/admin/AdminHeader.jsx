@@ -1,15 +1,37 @@
-import React from "react";
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import "./adminlayout.css";
 
-export default function AdminHeader() {
-  const user = JSON.parse(localStorage.getItem("user") || "null");
+export default function AdminHeader({ onToggle }) {
+  const [q, setQ] = useState("");
+  const navigate = useNavigate();
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!q.trim()) return;
+    navigate(`/admin/search?q=${encodeURIComponent(q)}`);
+    setQ("");
+  };
 
   return (
-    <div className="admin-header">
-      <span className="admin-title">Admin Panel</span>
+    <header className="admin-header">
+      {/* NÚT THỤT SIDEBAR */}
+      <button className="sidebar-toggle" onClick={onToggle}>
+        ☰
+      </button>
 
-      <div className="admin-user">
-        <span>👤 {user?.full_name || "Admin"}</span>
-      </div>
-    </div>
+      <div className="admin-title">Admin Dashboard</div>
+
+      <form className="admin-search" onSubmit={handleSubmit}>
+        <input
+          type="text"
+          placeholder="🔍 Tìm sản phẩm, đơn hàng, user..."
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+        />
+      </form>
+
+      <div className="admin-user">👤 Admin</div>
+    </header>
   );
 }

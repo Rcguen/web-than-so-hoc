@@ -1,0 +1,158 @@
+/* FLOATING WINDOW */
+.messenger-chat {
+  position: fixed;
+  bottom: 90px;
+  right: 24px;
+  width: 360px;
+  height: 520px;
+  background: #f0f2f5;
+  border-radius: 18px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  z-index: 9999;
+  overflow: hidden;
+  font-family: system-ui, sans-serif;
+}
+
+/* HEADER */
+.chat-header {
+  background: linear-gradient(135deg, #7b2ff7, #a855f7);
+  color: white;
+  padding: 12px 16px;
+  font-weight: 600;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.chat-header button {
+  background: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  padding: 2px 6px;
+}
+
+/* TABS */
+.chat-tabs {
+  display: flex;
+  background: #ede9fe;
+}
+
+.chat-tabs button {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.chat-tabs .active {
+  background: #7b2ff7;
+  color: white;
+}
+
+/* ONLINE DOT */
+.online-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background: #22c55e;
+  border-radius: 50%;
+  margin-left: 6px;
+}
+
+/* BODY */
+.chat-body {
+  flex: 1;
+  padding: 14px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* BUBBLES */
+.bubble {
+  max-width: 75%;
+  padding: 10px 14px;
+  border-radius: 18px;
+  font-size: 14px;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+/* USER */
+.bubble.user {
+  align-self: flex-end;
+  background: #7b2ff7;
+  color: white;
+  border-bottom-right-radius: 4px;
+}
+
+/* AI */
+.bubble.ai {
+  align-self: flex-start;
+  background: white;
+  border-bottom-left-radius: 4px;
+}
+
+/* ADMIN */
+.bubble.admin {
+  align-self: flex-start;
+  background: #e0e7ff;
+  border-bottom-left-radius: 4px;
+}
+
+/* TYPING */
+.typing span {
+  animation: blink 1.4s infinite both;
+}
+
+.typing span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.typing span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes blink {
+  0% {
+    opacity: 0.2;
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.2;
+  }
+}
+
+/* INPUT */
+.chat-input {
+  display: flex;
+  padding: 10px;
+  background: white;
+  border-top: 1px solid #ddd;
+}
+
+.chat-input input {
+  flex: 1;
+  border: none;
+  border-radius: 999px;
+  padding: 10px 14px;
+  background: #f1f1f1;
+  outline: none;
+}
+
+.chat-input button {
+  margin-left: 8px;
+  border: none;
+  border-radius: 999px;
+  padding: 0 16px;
+  background: #7b2ff7;
+  color: white;
+  cursor: pointer;
+}

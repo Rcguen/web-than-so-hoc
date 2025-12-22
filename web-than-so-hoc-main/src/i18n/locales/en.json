@@ -1,0 +1,32 @@
+{
+  "nav": {
+    "home": "Home",
+    "lookup": "Lookup",
+    "profile": "Profile",
+    "login": "Login",
+    "logout": "Logout"
+  },
+
+  "home": {
+    "title": "NUMEROLOGY LOOKUP WEBSITE",
+    "subtitle": "Discover yourself through numbers",
+    "lookup": "Lookup now"
+  },
+
+  "lookup": {
+    "title": "Numerology Lookup",
+    "name": "Full name",
+    "birth": "Date of birth",
+    "submit": "Lookup",
+    "loading": "Processing..."
+  },
+
+  "profile": {
+    "title": "Profile",
+    "fullname": "Full name",
+    "gender": "Gender",
+    "phone": "Phone",
+    "address": "Address",
+    "save": "Save changes"
+  }
+}

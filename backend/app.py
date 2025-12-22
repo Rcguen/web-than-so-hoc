@@ -27,42 +27,51 @@ from routes.knowledge_routes import knowledge_bp
 from routes.ai_routes import ai_bp
 from routes.numerology_routes import external_bp
 from routes.love_routes import love_bp
+from routes.ai_chat_routes import ai_chat_bp
 
+from flask_jwt_extended import JWTManager
+from flask_jwt_extended import (
+    jwt_required,
+    get_jwt_identity
+)
 
 # =====================================================
 load_dotenv()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+UPLOAD_FOLDER = os.path.join(BASE_DIR, "uploads", "avatars")
 app = Flask(__name__)   
 
 CORS(app)
+app.register_blueprint(auth)
+app.register_blueprint(profile)
+app.register_blueprint(product_routes, url_prefix="/api")
+app.register_blueprint(category_routes, url_prefix="/api")
+app.register_blueprint(order_routes, url_prefix="/api")
+app.register_blueprint(shipping_routes, url_prefix="/api")
+app.register_blueprint(knowledge_bp)
+app.register_blueprint(ai_bp)
+app.register_blueprint(external_bp)
+app.register_blueprint(love_bp)
+app.register_blueprint(ai_chat_bp)
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-UPLOAD_FOLDER = os.path.join(BASE_DIR, "uploads", "avatars")
+app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
+app.config["MAX_CONTENT_LENGTH"] = 2 * 1024 * 1024  # 2MB
+
+
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-def create_app():
-    app = Flask(__name__)   
+# def create_app():
+#     app = Flask(__name__)   
 
-    CORS(app)
-    app.register_blueprint(auth)
-    app.register_blueprint(profile)
-    app.register_blueprint(product_routes, url_prefix="/api")
-    app.register_blueprint(category_routes, url_prefix="/api")
-    app.register_blueprint(order_routes, url_prefix="/api")
-    app.register_blueprint(shipping_routes, url_prefix="/api")
-    app.register_blueprint(knowledge_bp)
-    app.register_blueprint(ai_bp)
-    app.register_blueprint(external_bp)
-    app.register_blueprint(love_bp)
+#     CORS(app)
+    
 
-    app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
-    app.config["MAX_CONTENT_LENGTH"] = 2 * 1024 * 1024  # 2MB
-
-    @app.get("/")
-    def health():
-        return {"status": "ok"}, 200
-    return app
+    # @app.get("/")
+    # def health():
+    #     return {"status": "ok"}, 200
+    # return app
 # =====================================================
 # 🔢 1. HÀM TÍNH TOÁN BIỂU ĐỒ SINH MỆNH (Pythagoras)
 # =====================================================
@@ -402,64 +411,62 @@ def get_numerology_details(result_id):
 
 @app.route("/api/admin/dashboard")
 def admin_dashboard():
-    try:
-        conn = get_db_connection()
-        cur = conn.cursor(dictionary=True)
+    conn = get_db_connection()
+    cur = conn.cursor(dictionary=True)
 
-        # Tổng user
-        cur.execute("SELECT COUNT(*) AS total FROM users")
-        total_users = cur.fetchone()["total"]
+    # ===== SUMMARY =====
+    cur.execute("SELECT COUNT(*) AS total_users FROM users")
+    total_users = cur.fetchone()["total_users"]
 
-        # Tổng lượt tra cứu
-        cur.execute("SELECT COUNT(*) AS total FROM numerology_results")
-        total_lookups = cur.fetchone()["total"]
+    cur.execute("SELECT COUNT(*) AS total_products FROM products")
+    total_products = cur.fetchone()["total_products"]
 
-        # Thống kê life path
-        cur.execute("""
-            SELECT life_path_number, COUNT(*) AS total
-            FROM numerology_results
-            WHERE life_path_number IS NOT NULL
-            GROUP BY life_path_number
-            ORDER BY life_path_number
-        """)
-        life_path_stats = cur.fetchall()
+    cur.execute("SELECT COUNT(*) AS total_categories FROM categories")
+    total_categories = cur.fetchone()["total_categories"]
 
-        # Lookup theo ngày
-        cur.execute("""
-            SELECT DATE(created_at) AS date, COUNT(*) AS total
-            FROM numerology_results
-            GROUP BY DATE(created_at)
-            ORDER BY date
-        """)
-        lookup_by_day = cur.fetchall()
+    cur.execute("SELECT COUNT(*) AS total_orders FROM orders")
+    total_orders = cur.fetchone()["total_orders"]
 
-        # Orders theo ngày
-        cur.execute("""
-            SELECT DATE(created_at) AS date, COUNT(*) AS total
-            FROM orders
-            GROUP BY DATE(created_at)
-            ORDER BY date
-        """)
-        orders_by_day = cur.fetchall()
+    # ===== LIFE PATH =====
+    cur.execute("""
+        SELECT life_path_number, COUNT(*) AS total
+        FROM numerology_results
+        GROUP BY life_path_number
+        ORDER BY life_path_number
+    """)
+    life_path_stats = cur.fetchall()
 
-        return jsonify({
-            "total_users": total_users,
-            "total_lookups": total_lookups,
-            "life_path_stats": life_path_stats,
-            "lookup_by_day": lookup_by_day,
-            "orders_by_day": orders_by_day
-        })
+    # ===== LOOKUP BY DAY =====
+    cur.execute("""
+        SELECT DATE(created_at) AS date, COUNT(*) AS total
+        FROM numerology_results
+        GROUP BY DATE(created_at)
+        ORDER BY DATE(created_at)
+    """)
+    lookup_by_day = cur.fetchall()
 
-    except Exception as e:
-        print("❌ Dashboard error:", e)
-        return jsonify({"error": str(e)}), 500
+    # ===== ORDERS BY DAY =====
+    cur.execute("""
+        SELECT DATE(created_at) AS date, COUNT(*) AS total
+        FROM orders
+        GROUP BY DATE(created_at)
+        ORDER BY DATE(created_at)
+    """)
+    orders_by_day = cur.fetchall()
 
-    finally:
-        try:
-            cur.close()
-            conn.close()
-        except:
-            pass
+    cur.close()
+    conn.close()
+
+    return jsonify({
+        "total_users": total_users,
+        "total_products": total_products,
+        "total_categories": total_categories,
+        "total_orders": total_orders,
+        "life_path_stats": life_path_stats,
+        "lookup_by_day": lookup_by_day,
+        "orders_by_day": orders_by_day
+    })
+
 
 @app.get("/api/admin/users")
 def admin_get_users():
@@ -1117,10 +1124,105 @@ def get_related_products(product_id):
 
     return jsonify(related)
 
+# =====================================================
+# WALLET API
+# =====================================================
+
+@app.get("/api/wallet")
+@jwt_required()
+def get_wallet():
+    user_id = get_jwt_identity()
+    cur = get_db_connection().cursor(dictionary=True)
+
+    cur.execute("SELECT balance FROM wallets WHERE user_id=%s", (user_id,))
+    wallet = cur.fetchone()
+
+    return jsonify(wallet or {"balance": 0})
+
+@app.post("/api/wallet/topup")
+@jwt_required()
+def topup_wallet():
+    data = request.json
+    amount = float(data.get("amount", 0))
+    user_id = get_jwt_identity()
+
+    if amount <= 0:
+        return jsonify({"message": "Số tiền không hợp lệ"}), 400
+
+    cur = get_db_connection().cursor()
+
+    cur.execute(
+        "UPDATE wallets SET balance = balance + %s WHERE user_id=%s",
+        (amount, user_id)
+    )
+
+    cur.execute("""
+        INSERT INTO wallet_transactions (user_id, amount, type, description)
+        VALUES (%s,%s,'TOPUP','Nạp tiền vào ví')
+    """, (user_id, amount))
+
+    get_db_connection().commit()
+
+    return jsonify({"message": "Nạp tiền thành công"})
+
+# =====================================================
+@app.route("/api/admin/search", methods=["GET"])
+@jwt_required()
+def admin_search():
+    q = request.args.get("q", "").strip()
+    if not q:
+        return jsonify({
+            "products": [],
+            "orders": [],
+            "users": []
+        })
+
+    conn = get_db_connection()
+    cur = conn.cursor(dictionary=True)
+
+    # 🔍 Products
+    cur.execute("""
+        SELECT product_id, product_name
+        FROM products
+        WHERE product_name LIKE %s
+        LIMIT 5
+    """, (f"%{q}%",))
+    products = cur.fetchall()
+
+    # 📦 Orders
+    cur.execute("""
+        SELECT order_id, total_price
+        FROM orders
+        WHERE order_id LIKE %s
+        ORDER BY created_at DESC
+        LIMIT 5
+    """, (f"%{q}%",))
+    orders = cur.fetchall()
+
+    # 👤 Users
+    cur.execute("""
+        SELECT user_id, email
+        FROM users
+        WHERE email LIKE %s OR full_name LIKE %s
+        LIMIT 5
+    """, (f"%{q}%", f"%{q}%"))
+    users = cur.fetchall()
+
+    cur.close()
+    conn.close()
+
+    return jsonify({
+        "products": products,
+        "orders": orders,
+        "users": users
+    })
+
+# =----------------------------------------------------
+
 
 # =====================================================
 # 🚀 MAIN ENTRY
 # =====================================================
 if __name__ == "__main__":
-    app = create_app()
+
     app.run(debug=True)

@@ -1,51 +1,38 @@
-import { useEffect, useRef } from "react";
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Tooltip,
-  Legend,
-} from "chart.js";
+import { Line } from "react-chartjs-2";
+import { useMemo } from "react";
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
+export default function LookupChart({ data }) {
 
-function OrderChart({ data }) {
-  const canvasRef = useRef(null);
-  const chartRef = useRef(null);
+  const chartData = useMemo(() => {
+    if (!data || !data.length) return null;
 
-  useEffect(() => {
-    if (!canvasRef.current || !data?.length) return;
+    return {
+      labels: data.map(i => i.date),
+      datasets: [
+        {
+          label: "Lượt tra cứu",
+          data: data.map(i => i.total),
+          borderColor: "#7b2ff7",
+          backgroundColor: "rgba(123,47,247,0.25)",
+          tension: 0.4,
+        },
+      ],
+    };
+  }, [data]);
 
-    const labels = data.map((d) => d.day);
-    const values = data.map((d) => d.total);
+  if (!chartData) return <p>Chưa có dữ liệu</p>;
 
-    if (chartRef.current) chartRef.current.destroy();
-
-    chartRef.current = new ChartJS(canvasRef.current, {
-      type: "bar",
-      data: {
-        labels,
-        datasets: [
-          {
-            label: "Số đơn hàng",
-            data: values,
-            backgroundColor: "#22c55e",
-          },
-        ],
-      },
-      options: {
+  return (
+    <Line
+      data={chartData}
+      options={{
         responsive: true,
+        maintainAspectRatio: false,
+        animation: false,          // 👈 CHỐT LOOP
         scales: {
           y: { beginAtZero: true },
         },
-      },
-    });
-
-    return () => chartRef.current?.destroy();
-  }, [data]);
-
-  return <canvas ref={canvasRef} />;
+      }}
+    />
+  );
 }
-
-export default OrderChart;

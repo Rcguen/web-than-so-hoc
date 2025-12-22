@@ -18,6 +18,10 @@ from reportlab.lib import colors
 from reportlab.lib.colors import HexColor
 
 
+
+from reportlab.lib.units import cm
+from reportlab.pdfgen import canvas
+
 # ===================================================
 # CONFIG
 # ===================================================
@@ -236,3 +240,110 @@ def generate_numerology_pdf(
     )
 
     return pdf_path
+
+# ===================================================
+# PDF LOVER GENERATOR
+# ===================================================
+
+
+
+def generate_love_pdf(
+    *,
+    out_dir: str,
+    title: str,
+    person_a: dict,
+    person_b: dict | None,
+    scores: dict | None,
+    overlaps: list[str] | None,
+    ai_text: str,
+    ai_reason: str | None = None
+) -> str:
+    os.makedirs(out_dir, exist_ok=True)
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"love_report_{ts}.pdf"
+    path = os.path.join(out_dir, filename)
+
+    c = canvas.Canvas(path, pagesize=A4)
+    w, h = A4
+
+    # Header
+    y = h - 2.0 * cm
+    c.setFont("Helvetica-Bold", 18)
+    c.drawString(2.0 * cm, y, title)
+
+    y -= 0.9 * cm
+    c.setFont("Helvetica", 10)
+    c.drawString(2.0 * cm, y, f"Generated: {datetime.now().strftime('%d/%m/%Y %H:%M')}")
+
+    def draw_section(label: str):
+        nonlocal y
+        y -= 0.9 * cm
+        if y < 3 * cm:
+            c.showPage()
+            y = h - 2.0 * cm
+        c.setFont("Helvetica-Bold", 12)
+        c.drawString(2.0 * cm, y, label)
+        y -= 0.5 * cm
+        c.setFont("Helvetica", 10)
+
+    def draw_wrapped(text: str, max_chars=105):
+        nonlocal y
+        text = (text or "").strip()
+        if not text:
+            c.drawString(2.0 * cm, y, "(trống)")
+            y -= 0.5 * cm
+            return
+        for para in text.split("\n"):
+            para = para.rstrip()
+            if not para:
+                y -= 0.35 * cm
+                continue
+            # wrap naive by chars (đủ dùng)
+            while len(para) > max_chars:
+                line = para[:max_chars]
+                c.drawString(2.0 * cm, y, line)
+                y -= 0.45 * cm
+                if y < 2.5 * cm:
+                    c.showPage()
+                    y = h - 2.0 * cm
+                    c.setFont("Helvetica", 10)
+                para = para[max_chars:]
+            c.drawString(2.0 * cm, y, para)
+            y -= 0.45 * cm
+            if y < 2.5 * cm:
+                c.showPage()
+                y = h - 2.0 * cm
+                c.setFont("Helvetica", 10)
+
+    # Person A
+    draw_section("Person A")
+    draw_wrapped(f"Name: {person_a.get('name')}\nBirth: {person_a.get('birth_date')}\nNumbers: {person_a.get('numbers')}")
+
+    if person_b:
+        draw_section("Person B")
+        draw_wrapped(f"Name: {person_b.get('name')}\nBirth: {person_b.get('birth_date')}\nNumbers: {person_b.get('numbers')}")
+
+    if scores:
+        draw_section("Compatibility Scores")
+        draw_wrapped(
+            f"Overall: {scores.get('overall')}\n"
+            f"Communication: {scores.get('communication')}\n"
+            f"Emotion: {scores.get('emotion')}\n"
+            f"Commitment: {scores.get('commitment')}\n"
+            f"Growth: {scores.get('growth')}"
+        )
+
+    if overlaps:
+        draw_section("Love + Life Path Overlaps")
+        draw_wrapped("\n".join(f"- {x}" for x in overlaps))
+
+    draw_section("AI Compatibility Content")
+    draw_wrapped(ai_text)
+
+    if ai_reason:
+        draw_section("AI Explanation (Why match / not match)")
+        draw_wrapped(ai_reason)
+
+    c.save()
+    return path
+

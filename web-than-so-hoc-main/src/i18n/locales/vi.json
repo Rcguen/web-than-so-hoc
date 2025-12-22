@@ -1,0 +1,32 @@
+{
+  "nav": {
+    "home": "Trang chủ",
+    "lookup": "Tra cứu",
+    "profile": "Hồ sơ",
+    "login": "Đăng nhập",
+    "logout": "Đăng xuất"
+  },
+
+  "home": {
+    "title": "WEB TRA CỨU THẦN SỐ HỌC",
+    "subtitle": "Khám phá bản thân qua những con số",
+    "lookup": "Tra cứu ngay"
+  },
+
+  "lookup": {
+    "title": "Tra cứu Thần Số Học",
+    "name": "Họ tên",
+    "birth": "Ngày sinh",
+    "submit": "Tra cứu ngay",
+    "loading": "Đang tra cứu..."
+  },
+
+  "profile": {
+    "title": "Hồ sơ cá nhân",
+    "fullname": "Họ tên",
+    "gender": "Giới tính",
+    "phone": "Số điện thoại",
+    "address": "Địa chỉ",
+    "save": "Lưu thay đổi"
+  }
+}

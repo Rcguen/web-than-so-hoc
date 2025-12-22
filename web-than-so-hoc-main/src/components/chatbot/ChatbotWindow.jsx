@@ -1,58 +1,87 @@
 import { useState } from "react";
-import { sendChatMessage } from "./chatApi";
+import { sendNumerologySummary } from "./chatApi";
 
-export default function ChatbotWindow({ onClose }) {
+export default function ChatbotWindow() {
   const [messages, setMessages] = useState([
-    { from: "bot", text: "Xin chào 👋 Tôi là AI Thần Số Học!" }
+    {
+      role: "ai",
+      text: "👋 Xin chào! Tôi là AI Thần Số Học.\n👉 Vui lòng nhập họ tên và ngày sinh để tôi phân tích cho bạn.",
+    },
   ]);
-  const [input, setInput] = useState("");
+
+  const [name, setName] = useState("");
+  const [birthDate, setBirthDate] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSend = async () => {
-    if (!input.trim()) return;
-
-    const userMsg = { from: "user", text: input };
-    setMessages(prev => [...prev, userMsg]);
-    setInput("");
-    setLoading(true);
-
-    try {
-      const reply = await sendChatMessage(input);
-      setMessages(prev => [...prev, { from: "bot", text: reply }]);
-    } catch {
-      setMessages(prev => [
+  const handleAnalyze = async () => {
+    if (!name || !birthDate) {
+      setMessages((prev) => [
         ...prev,
-        { from: "bot", text: "❌ Lỗi khi gọi AI" }
+        { role: "system", text: "⚠️ Vui lòng nhập đầy đủ họ tên và ngày sinh." },
       ]);
+      return;
     }
 
-    setLoading(false);
+    setLoading(true);
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "user",
+        text: `👤 ${name}\n📅 ${birthDate}`,
+      },
+    ]);
+
+    try {
+      // ⚠️ Nếu em đã có sẵn các chỉ số thì truyền vào đây
+      const result = await sendNumerologySummary({
+        name,
+        birth_date: birthDate,
+        numbers: {}, // có thể bổ sung sau
+      });
+
+      setMessages((prev) => [
+        ...prev,
+        { role: "ai", text: result },
+      ]);
+    } catch (err) {
+      console.error(err);
+      setMessages((prev) => [
+        ...prev,
+        { role: "system", text: "❌ Không thể phân tích lúc này." },
+      ]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="chat-window">
-      <div className="chat-header">
-        🤖 Chatbot Thần Số Học
-        <button onClick={onClose}>✖</button>
-      </div>
-
-      <div className="chat-body">
+    <div className="chatbot-window">
+      <div className="chatbot-messages">
         {messages.map((m, i) => (
-          <div key={i} className={`msg ${m.from}`}>
+          <div key={i} className={`chat-bubble ${m.role}`}>
             {m.text}
           </div>
         ))}
-        {loading && <div className="msg bot">⏳ AI đang trả lời...</div>}
       </div>
 
-      <div className="chat-input">
+      <div className="chatbot-form">
         <input
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={e => e.key === "Enter" && handleSend()}
-          placeholder="Nhập câu hỏi..."
+          type="text"
+          placeholder="Họ tên..."
+          value={name}
+          onChange={(e) => setName(e.target.value)}
         />
-        <button onClick={handleSend}>Gửi</button>
+
+        <input
+          type="date"
+          value={birthDate}
+          onChange={(e) => setBirthDate(e.target.value)}
+        />
+
+        <button onClick={handleAnalyze} disabled={loading}>
+          {loading ? "Đang phân tích..." : "🔮 Phân tích"}
+        </button>
       </div>
     </div>
   );

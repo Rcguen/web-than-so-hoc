@@ -18,3 +18,60 @@
   margin-top: 10px;
   color: #7c3aed;
 }
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr); /* 4 ô đều nhau */
+  gap: 16px;
+  margin: 20px 0;
+}
+
+
+.stat-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  padding: 18px 20px;
+  border-radius: 14px;
+  color: #fff;
+  font-weight: 600;
+  font-size: 16px;
+
+  min-height: 70px;     /* 🔒 khóa chiều cao */
+  width: 100%;          /* 🔒 full ô grid */
+
+  box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+}
+
+
+.purple { background: #7c3aed; }
+.green { background: #16a34a; }
+.blue { background: #2563eb; }
+.stat-card.orange {
+  background: linear-gradient(135deg, #ff7a18, #ff9f43);
+}
+
+
+.admin-dashboard {
+  padding: 24px;
+}
+
+.chart-box {
+  background: #ffffff;
+  padding: 20px;
+  border-radius: 16px;
+  margin-bottom: 28px;
+}
+
+.chart-container {
+  height: 280px;          /* 👈 CỐ ĐỊNH */
+  max-height: 280px;
+  overflow: hidden;       /* 👈 CỰC KỲ QUAN TRỌNG */
+  position: relative;
+}
+
+.chart-container canvas {
+  height: 280px !important;
+  max-height: 280px !important;
+}

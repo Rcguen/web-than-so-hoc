@@ -24,7 +24,7 @@ function Services() {
       title: "Chỉ Số Sứ Mệnh",
       desc: "Tìm hiểu con số nói lên lý do tồn tại và hướng đi cuộc đời bạn.",
       img: "/assets/images/services-03.jpg",
-      link: "/details/mission",
+      link: "/lookup",
       color: "#FF69B4",
     },
     {
@@ -51,7 +51,7 @@ function Services() {
     {
       title: "Tình Yêu & Mối Quan Hệ",
       desc: "Tạo báo cáo đầy đủ các chỉ số thần số học của riêng bạn.",
-      img: "/assets/images/services-06.jpg",
+      img: "/assets/images/services-07.jpg",
       link: "/love-page",
       color: "#f81effff",
     },

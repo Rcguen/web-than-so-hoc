@@ -49,10 +49,18 @@ import PaymentSuccess from './pages/PaymentSuccess.jsx';
 import PaymentFail from './pages/PaymentFail.jsx';
 import VNPayReturnProxy from './pages/VNPayReturnProxy.jsx';
 import LovePage from './pages/LovePage.jsx';
+import ScrollToTopButton from './components/ScrollToTopButton.jsx';
+import i18n from './i18n/i18n.js';
+import AdminSearch from './admin/pages/AdminSearch.jsx';
+import UnifiedChatWindow from './components/chatbot/UnifiedChatWindow.jsx';
+import { useState } from 'react';
 
 function App() {
   const location = useLocation(); // ⭐ Giờ đã OK vì Router nằm ở index.js
-  
+  // const [showChat, setShowChat] = useState(false);
+
+
+
 
   return (
     <CartProvider>
@@ -152,12 +160,14 @@ function App() {
   <Route path="users" element={<AdminUsers />} />
   <Route path="messages" element={<AdminMessages />} />
 
+  <Route path="search" element={<AdminSearch />} />
 </Route>
 
 
 
         </Routes>
-        <FloatingChat />  
+        <ScrollToTopButton />
+        
         <Footer />
       </>
     </CartProvider>

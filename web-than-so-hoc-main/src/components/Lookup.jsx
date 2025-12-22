@@ -14,7 +14,7 @@ function Lookup() {
   const [hasResult, setHasResult] = useState(false);
   const resultRef = useRef(null);
 
-
+  
 
   const handleSubmit = async (e) => {
     e.preventDefault();

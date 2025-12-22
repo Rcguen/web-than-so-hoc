@@ -454,3 +454,132 @@ QUY TẮC NGUỒN DỮ LIỆU:
 - Khi diễn giải, không được làm sai ý nguồn
 - Nếu dữ liệu không đủ, nói rõ "chưa đủ dữ liệu để phân tích mục này"
 """
+# =================================================================
+def build_love_explain_prompt(
+    *,
+    mode: str,  # "single" | "couple"
+    person_a: dict,
+    person_b: dict | None,
+    knowledge_text: str,
+    esgoo_text_a: str = "",
+    esgoo_text_b: str = "",
+    scores_a: dict | None = None,
+    scores_b: dict | None = None,
+    compatibility_scores: dict | None = None,  # nếu em có điểm “tổng” cho cặp
+):
+    def fmt_scores(s: dict | None) -> str:
+        if not s:
+            return "(chưa có điểm radar)"
+        keys = ["overall", "emotional", "communication", "stability", "chemistry"]
+        return "\n".join([f"- {k}: {int(s.get(k, 0))}/100" for k in keys])
+
+    def fmt_person(p: dict) -> str:
+        nums = p.get("numbers") or {}
+        return f"""
+Họ tên: {p.get("name")}
+Ngày sinh: {p.get("birth_date")}
+Chỉ số:
+- Life Path: {nums.get("life_path")}
+- Destiny: {nums.get("destiny")}
+- Soul: {nums.get("soul")}
+- Personality: {nums.get("personality")}
+""".strip()
+
+    explain_rules = """
+QUY TẮC BẮT BUỘC:
+- Trả lời 100% bằng tiếng Việt.
+- Evidence/knowledge có thể tiếng Anh: phải DIỄN GIẢI sang Việt rồi mới kết luận.
+- Không bịa thêm chỉ số mới.
+- Khi nói "hợp/không hợp", bắt buộc nêu 2-4 lý do cụ thể dựa trên:
+  (a) số đã có (Life Path/Destiny/Soul/Personality)
+  (b) radar scores (nếu có)
+  (c) trích đoạn knowledge/esgoo (nếu có)
+- Nếu thiếu dữ liệu => nói rõ thiếu gì và chỉ gợi ý cách bổ sung.
+""".strip()
+
+    if mode == "single":
+        return f"""
+Bạn là chuyên gia Thần số học Pitago (Việt Nam).
+
+{explain_rules}
+
+====================
+NGƯỜI DÙNG
+====================
+{fmt_person(person_a)}
+
+====================
+RADAR (TỰ ĐÁNH GIÁ / HỆ THỐNG)
+====================
+{fmt_scores(scores_a)}
+
+====================
+TRÍCH ĐOẠN SÁCH (KNOWLEDGE)
+====================
+{knowledge_text}
+
+====================
+ESGOO (THAM KHẢO)
+====================
+{esgoo_text_a}
+
+====================
+YÊU CẦU ĐẦU RA
+====================
+1) Tóm tắt tình yêu (3-5 câu)
+2) Giải thích radar: vì sao điểm cao/thấp từng mục (5 mục, mỗi mục 2-3 câu)
+3) Chồng chéo Love vs Life Path: nêu 3 xung đột/điểm hỗ trợ thường gặp
+4) Lời khuyên thực tế: 6-10 bullet (ngắn, làm được)
+""".strip()
+
+    # couple
+    compat_text = ""
+    if compatibility_scores:
+        compat_text = "Điểm tương hợp tổng:\n" + fmt_scores(compatibility_scores)
+
+    return f"""
+Bạn là chuyên gia Thần số học Pitago (Việt Nam).
+
+{explain_rules}
+
+====================
+NGƯỜI A
+====================
+{fmt_person(person_a)}
+
+RADAR A:
+{fmt_scores(scores_a)}
+
+ESGOO A:
+{esgoo_text_a}
+
+====================
+NGƯỜI B
+====================
+{fmt_person(person_b or {})}
+
+RADAR B:
+{fmt_scores(scores_b)}
+
+ESGOO B:
+{esgoo_text_b}
+
+====================
+TRÍCH ĐOẠN SÁCH (KNOWLEDGE)
+====================
+{knowledge_text}
+
+====================
+TƯƠNG HỢP (NẾU CÓ)
+====================
+{compat_text or "(chưa có điểm tổng)"}
+
+====================
+YÊU CẦU ĐẦU RA
+====================
+1) Mức tương hợp: Thấp/Trung bình/Cao + 2-4 lý do (rõ ràng)
+2) Giải thích radar của cặp: mục nào lệch nhau nhất và ảnh hưởng gì (5 mục)
+3) “Love + Life Path chồng chéo”: nêu 5 điểm dễ xung đột + 5 điểm bổ trợ
+4) Kế hoạch bền: 8-12 bullet (giao tiếp, ranh giới, thói quen, tài chính, thời gian)
+5) Kết luận thực tế (không phán đoán tuyệt đối)
+""".strip()

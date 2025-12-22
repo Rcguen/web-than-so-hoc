@@ -233,6 +233,19 @@ function Shop() {
           background: linear-gradient(to right, #7a00ff, #aa00ff);
           color: #fff;
         }
+          .badge-out {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  background: #ff4d4f;
+  color: #fff;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 10px;
+  z-index: 2;
+}
+
       `}</style>
 
       <h1 className="shop-title">
@@ -244,6 +257,10 @@ function Shop() {
 
       {/* TOOLBAR */}
       <div className="shop-toolbar">
+        <p style={{ margin: "10px 0 25px", color: "#666" }}>
+  Hiển thị <strong>{filteredProducts.length}</strong> sản phẩm
+</p>
+
         <div className="search-box">
           <input
             className="search-input"
@@ -265,37 +282,34 @@ function Shop() {
       </div>
 
       {/* CATEGORY */}
-      <div className="category-filter">
-        <button
-          className={`category-btn ${activeCategory === "all" ? "active" : ""}`}
-          onClick={() => {
-            setActiveCategory("all");
-            loadProducts("all");
-          }}
-        >
-          Tất cả
-        </button>
+      <div style={{ display: "flex", gap: 15, justifyContent: "center", marginBottom: 30 }}>
+  <select
+    className="sort-select"
+    value={activeCategory}
+    onChange={(e) => {
+      const val = e.target.value;
+      setActiveCategory(val);
+      loadProducts(val);
+    }}
+  >
+    <option value="all">Tất cả danh mục</option>
+    {categories.map((cat) => (
+      <option key={cat.category_id} value={cat.category_id}>
+        {cat.category_name}
+      </option>
+    ))}
+  </select>
+</div>
 
-        {categories.map((cat) => (
-          <button
-            key={cat.category_id}
-            className={`category-btn ${
-              activeCategory === cat.category_id ? "active" : ""
-            }`}
-            onClick={() => {
-              setActiveCategory(cat.category_id);
-              loadProducts(cat.category_id);
-            }}
-          >
-            {cat.category_name}
-          </button>
-        ))}
-      </div>
 
       {/* PRODUCT GRID */}
       <div className="product-grid">
         {filteredProducts.map((prod) => (
           <div className="product-card" key={prod.product_id}>
+            {prod.quantity <= 0 && (
+  <div className="badge-out">Hết hàng</div>
+)}
+
             <Link to={`/product/${prod.product_id}`}>
               <img
                 src={`http://127.0.0.1:5000${prod.image_url}`}
@@ -312,17 +326,36 @@ function Shop() {
               <div className="product-price">
                 {Number(prod.price).toLocaleString("vi-VN")} đ
               </div>
+              <p
+  style={{
+    fontSize: "13px",
+    marginBottom: "10px",
+    color: prod.quantity > 0 ? "#28a745" : "#ff4d4f",
+    fontWeight: 700,
+  }}
+>
+  {prod.quantity > 0
+    ? `Còn ${prod.quantity} sản phẩm`
+    : "Hết hàng"}
+</p>
+
 
               <div className="product-actions">
                 <Link to={`/product/${prod.product_id}`} style={{ flex: 1 }}>
                   <button className="btn-view">Xem</button>
                 </Link>
                 <button
-                  className="btn-add"
-                  onClick={() => addToCart(prod)}
-                >
-                  Mua
-                </button>
+  className="btn-add"
+  disabled={prod.quantity <= 0}
+  onClick={() => addToCart(prod)}
+  style={{
+    opacity: prod.quantity <= 0 ? 0.6 : 1,
+    cursor: prod.quantity <= 0 ? "not-allowed" : "pointer",
+  }}
+>
+  {prod.quantity > 0 ? "Mua" : "Hết hàng"}
+</button>
+
               </div>
             </div>
           </div>

@@ -4,9 +4,12 @@
 .admin-container {
   display: flex;
   min-height: 100vh;
-  background: #f5f0ff;
-  font-family: "Inter", sans-serif;
 }
+
+
+
+
+
 
 /* ---------- SIDEBAR ---------- */
 .admin-sidebar {
@@ -56,13 +59,15 @@
 
 /* Header */
 .admin-header {
-  background: #fff;
-  padding: 18px 30px;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  border-bottom: 2px solid #eee;
+  justify-content: space-between;
+  padding: 12px 24px;
+  background: linear-gradient(90deg, #7c3aed, #9333ea);
+  color: white;
+  min-height: 64px;
 }
+
 
 .admin-title {
   font-size: 22px;
@@ -77,9 +82,10 @@
 
 /* Main content */
 .admin-content {
-  padding: 30px;
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
 }
-
 /*************************************
  ========== GENERAL UI ==========
 *************************************/
@@ -572,4 +578,156 @@
 .action-col {
   display: flex;
   gap: 8px;
+}
+
+.admin-search {
+  flex: 1;
+  margin: 0 24px;
+}
+
+.admin-search input {
+  width: 100%;
+  max-width: 420px;
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: none;
+  outline: none;
+}
+
+/* ===== ADMIN SIDEBAR ===== */
+.admin-sidebar {
+  width: 250px;
+  height: 100vh;
+  background: linear-gradient(180deg, #7b2ff7, #a855f7);
+  color: white;
+  position: fixed;
+  left: 0;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 4px 0 20px rgba(0, 0, 0, 0.25);
+  z-index: 1000;
+}
+
+/* LOGO */
+.admin-logo {
+  padding: 24px 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: bold;
+  font-size: 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.logo-icon {
+  font-size: 24px;
+}
+
+.logo-text {
+  letter-spacing: 1px;
+}
+
+/* MENU */
+.admin-menu {
+  list-style: none;
+  padding: 12px;
+  margin: 0;
+  flex: 1;
+}
+
+.admin-menu li {
+  margin-bottom: 6px;
+}
+
+.admin-menu a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  text-decoration: none;
+  color: white;
+  font-weight: 500;
+  transition: all 0.25s ease;
+}
+
+/* HOVER */
+.admin-menu a:hover {
+  background: rgba(255, 255, 255, 0.18);
+  transform: translateX(4px);
+}
+
+/* ACTIVE */
+.admin-menu a.active {
+  background: white;
+  color: #7b2ff7;
+  font-weight: 600;
+}
+
+/* ICON + TEXT */
+.admin-menu span {
+  flex: 1;
+}
+
+/* FOOTER */
+.admin-sidebar-footer {
+  padding: 12px;
+  text-align: center;
+  font-size: 12px;
+  opacity: 0.85;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* ===== LAYOUT ===== */
+.admin-layout {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ===== SIDEBAR ===== */
+.admin-sidebar {
+  width: 250px;
+  transition: all 0.3s ease;
+}
+
+.admin-sidebar.collapsed {
+  width: 80px;
+}
+
+.admin-sidebar .logo-text {
+  transition: opacity 0.2s;
+}
+
+.admin-sidebar.collapsed .logo-text {
+  display: none;
+}
+
+/* MENU TEXT */
+.admin-sidebar.collapsed .admin-menu span {
+  display: none;
+}
+
+/* ===== MAIN ===== */
+.admin-main {
+  flex: 1;
+  display: flex;
+  margin-left: 250px;
+  transition: margin-left 0.3s ease;
+  overflow: hidden;
+}
+
+.admin-layout.collapsed .admin-main {
+  margin-left: 80px;
+}
+
+/* ===== HEADER TOGGLE ===== */
+.sidebar-toggle {
+  font-size: 22px;
+  background: transparent;
+  border: none;
+  color: white;
+  cursor: pointer;
+  margin-right: 12px;
 }

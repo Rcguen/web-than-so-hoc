@@ -3,6 +3,10 @@ import { NavLink, useNavigate, Link } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import { toast } from "react-toastify";
+import { useTranslation } from "react-i18next";
+
+
+
 
 const HEADER_HEIGHT = "80px";
 
@@ -16,6 +20,9 @@ function Header() {
   const navigate = useNavigate();
   const avatarRef = useRef(null);
   const { user, logout } = useAuth();
+  const { i18n } = useTranslation();
+
+
 
   /* ================= CLICK OUTSIDE (FIX MOBILE MENU) ================= */
   useEffect(() => {
@@ -386,6 +393,7 @@ function Header() {
                     >
                       🚪 Đăng xuất
                     </button>
+                    
                   </div>
                 )}
               </div>

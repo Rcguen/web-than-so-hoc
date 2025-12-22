@@ -36,6 +36,12 @@ def register():
     )
     conn.commit()
     user_id = cur.lastrowid
+    # sau khi tạo user
+    cur.execute(
+        "INSERT IGNORE INTO wallets (user_id, balance) VALUES (%s, 0)",
+        (user_id,)
+)
+
     cur.close(); conn.close()
 
     token = make_token(user_id)

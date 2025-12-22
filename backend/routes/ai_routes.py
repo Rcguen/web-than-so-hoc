@@ -224,3 +224,17 @@ def ai_full_report_pdf():
         "message": "Đã gửi báo cáo PDF",
         "pdf_path": pdf_path
     })
+
+# @ai_bp.route("/ai/chat", methods=["POST"])
+# def chat_ai():
+#     data = request.get_json()
+#     message = data.get("message")
+
+#     if not message:
+#         return jsonify({"reply": "Bạn chưa nhập câu hỏi"}), 400
+
+#     answer = generate_ai_answer(message)
+
+#     return jsonify({
+#         "reply": answer
+#     })

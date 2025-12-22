@@ -217,6 +217,20 @@ function ProductDetail() {
           }
           .detail-container { padding: 20px; }
         }
+
+        .badge-out {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  background: #ff4d4f;
+  color: #fff;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  border-radius: 12px;
+  z-index: 2;
+}
+
       `}</style>
 
       <div className="detail-container">
@@ -229,6 +243,10 @@ function ProductDetail() {
 
           {/* IMAGE */}
           <div className="img-wrapper">
+            {product.quantity <= 0 && (
+  <div className="badge-out">Hết hàng</div>
+)}
+
             <img
               src={
                 product.image_url
@@ -246,6 +264,19 @@ function ProductDetail() {
 
           {/* INFO */}
           <div className="info-wrapper">
+            <p
+  style={{
+    fontSize: "15px",
+    fontWeight: 700,
+    marginBottom: "20px",
+    color: product.quantity > 0 ? "#28a745" : "#ff4d4f",
+  }}
+>
+  {product.quantity > 0
+    ? `Còn ${product.quantity} sản phẩm`
+    : "Hết hàng"}
+</p>
+
             <h1>{product.product_name}</h1>
             <div className="price-tag">
               {Number(product.price).toLocaleString("vi-VN")} đ
@@ -260,12 +291,15 @@ function ProductDetail() {
             </div>
 
             <button
-              className="add-cart-btn"
-              onClick={handleAddToCart}
-              disabled={adding}
-            >
-              🛒 {adding ? "Đang thêm..." : "Thêm vào giỏ hàng"}
-            </button>
+  className="add-cart-btn"
+  onClick={handleAddToCart}
+  disabled={adding || product.quantity <= 0}
+>
+  {product.quantity > 0
+    ? adding ? "Đang thêm..." : "🛒 Thêm vào giỏ hàng"
+    : "🚫 Hết hàng"}
+</button>
+
           </div>
         </div>
       </div>

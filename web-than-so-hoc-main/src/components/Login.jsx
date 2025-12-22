@@ -32,16 +32,32 @@ function Login() {
       // sau khi login thành công
       login(data.user, data.token);
 
+      // 🔥 gọi thêm API profile
+const profileRes = await fetch("http://127.0.0.1:5000/api/profile", {
+  headers: {
+    Authorization: `Bearer ${data.token}`,
+  },
+});
+
+if (profileRes.ok) {
+  const profileData = await profileRes.json();
+
+  login(
+    {
+      ...data.user,
+      ...profileData.user, // 👈 có avatar_url
+    },
+    data.token
+  );
+}
+
       // ✅ Toast thành công
       toast.success(`👋 Xin chào ${data.user.full_name}!`);
 
-      if (data.user.role === "admin") {
-        navigate("/admin");
-      } else {
-        navigate("/");
-      }
 
-      toast.error(data.message || "❌ Đăng nhập thất bại");
+      navigate(data.user.role === "admin" ? "/admin" : "/");
+
+      
 
     } catch {
       setError("Lỗi kết nối server!");

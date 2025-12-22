@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, Link , useLocation} from "react-router-dom";
 import PaymentBadge from "../../components/PaymentBadge";
 import OrderStatusBadge from "../../components/OrderStatusBadge";
-
+import "./OrderHistory.css";
 
 function OrderHistory() {
   const [orders, setOrders] = useState([]);
@@ -31,62 +31,58 @@ const { id: order_id } = useParams();
     new Date(date).toLocaleString("vi-VN");
 
   return (
-    <div style={{ padding: "80px" }}>
-      <h1>Lịch sử đơn hàng</h1>
+  <div className="order-history-container">
+    <h1 className="order-history-title">📦 Lịch sử đơn hàng</h1>
 
-      {orders.length === 0 && <p>Bạn chưa có đơn hàng nào.</p>}
+    {orders.length === 0 && (
+      <p className="empty-text">Bạn chưa có đơn hàng nào.</p>
+    )}
 
-      <table className="orders-table-user">
-        <thead>
-          <tr>
-            <th>Mã đơn</th>
-            <th>Ngày đặt</th>
-            <th>Tổng tiền</th>
-            <th>Trạng thái</th>
-            <th>Thanh toán</th> 
-            <th>Xem</th>
-          </tr>
-        </thead>
+    <div className="order-list">
+      {orders.map((o) => (
+        <div className="order-card" key={o.order_id}>
+          <div className="order-card-header">
+            <div>
+              <strong>Mã đơn:</strong> #{o.order_id}
+              <div className="order-date">
+                {formatDate(o.created_at)}
+              </div>
+            </div>
 
-        <tbody>
-          {orders.map((o) => (
-  <tr key={o.order_id}>
-    <td>#{o.order_id}</td>
-    <td>{formatDate(o.created_at)}</td>
-    <td>{Number(o.total_price).toLocaleString()} đ</td>
+            <div className="order-total">
+              {Number(o.total_price).toLocaleString()} đ
+            </div>
+          </div>
 
-    {/* 🆕 Trạng thái đơn */}
-    <td>
-  <OrderStatusBadge
-    status={o.order_status}
-    orderId={o.order_id}
-  />
-</td>
+          <div className="order-card-body">
+            <div className="order-badges">
+              <OrderStatusBadge
+                status={o.order_status}
+                orderId={o.order_id}
+              />
+              <PaymentBadge
+                status={o.payment_status}
+                orderId={o.order_id}
+              />
+            </div>
 
-
-    {/* 🆕 Badge thanh toán */}
-    <td>
-      <PaymentBadge
-  status={o.payment_status}
-  orderId={o.order_id}
-/>
-
-    </td>
-
-    <td>
-      <Link to={`/order/${o.order_id}`}>Chi tiết</Link>
-    </td>
-  </tr>
-))}
-
-        </tbody>
-      </table>
-
-      <Link to="/shop">
-        <button className="back-btn">← Quay lại cửa hàng</button>
-      </Link>
+            <Link
+              to={`/order/${o.order_id}`}
+              className="order-detail-link"
+            >
+              Xem chi tiết →
+            </Link>
+          </div>
+        </div>
+      ))}
     </div>
-  );
+
+    <Link to="/shop">
+      <button className="back-btn">← Quay lại cửa hàng</button>
+    </Link>
+  </div>
+);
+
 }
 
 export default OrderHistory;

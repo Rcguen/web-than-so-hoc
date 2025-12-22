@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
+import { toast } from "react-toastify";
 
 export default function Profile() {
   const { token, user, login, logout } = useAuth(); // login() dùng để update user trong context
@@ -40,7 +41,19 @@ export default function Profile() {
           phone: u.phone || "",
           address: u.address || "",
         });
-      } catch {
+
+        // 🔥 QUAN TRỌNG: cập nhật lại user đầy đủ
+login(
+  {
+    ...user,
+    full_name: u.full_name,
+    gender: u.gender,
+    phone: u.phone,
+    address: u.address,
+    avatar_url: u.avatar_url,
+  },
+  token
+);      } catch {
         setErr("Lỗi kết nối server!");
       }
     };
@@ -77,13 +90,21 @@ export default function Profile() {
 
       // ✅ cập nhật lại user trong AuthContext + localStorage
       login(data.user, token);
-      setMsg("✅ Cập nhật thành công!");
+      toast.success("Hồ sơ đã được cập nhật");
+
     } catch {
       setErr("Lỗi kết nối server!");
     }
   };
 
-  if (!user) return null;
+  if (!user) {
+  return (
+    <div style={{ marginTop: 120, textAlign: "center" }}>
+      <p>⏳ Đang tải hồ sơ...</p>
+    </div>
+  );
+}
+
 
   return (
     <div style={{ maxWidth: 520, margin: "110px auto 40px", padding: 20 }}>
@@ -145,9 +166,11 @@ export default function Profile() {
       );
 
       if (res.status === 401) {
-        logout();
-        return;
-      }
+  toast.console.warn("Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại.");
+  logout();
+  return;
+}
+  
 
       const data = await res.json();
       if (!res.ok) {

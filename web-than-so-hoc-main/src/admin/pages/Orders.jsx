@@ -1,85 +1,65 @@
-import React, { useState, useEffect } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import React, { useEffect, useState } from "react";
 import axios from "axios";
-import PaymentBadge from "../../components/PaymentBadge";
-import AdminOrderStatusBadge from "../pages/AdminOrderStatusBadge";
-
+import { Link } from "react-router-dom";
+import "./admin.css";
 
 export default function Orders() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState("all");
-  const location = useLocation();
+  const [keyword, setKeyword] = useState("");
+  const [status, setStatus] = useState("all");
 
   const fetchOrders = async () => {
     try {
-      const token = localStorage.getItem("token");
-      const res = await axios.get("http://127.0.0.1:5000/api/admin/orders", {
-        headers: token ? { Authorization: `Bearer ${token}` } : {}
-      });
-      console.log("Orders:", res.data.orders); // DEBUG
-      setOrders(res.data.orders || []);
-      setLoading(false);
+      const res = await axios.get("http://127.0.0.1:5000/api/admin/orders");
+      setOrders(res.data.orders || res.data || []);
     } catch (err) {
-      console.error(err);
-      setLoading(false);
-      alert("Không thể tải danh sách đơn hàng!");
+      console.error("Load orders error", err);
     }
-  };
-
-  const navigate = useNavigate();
-
-  const handleView = (id) => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      alert("Vui lòng đăng nhập bằng tài khoản admin để xem chi tiết");
-      navigate("/login");
-      return;
-    }
-    navigate(`/admin/orders/${id}`);
+    setLoading(false);
   };
 
   useEffect(() => {
     fetchOrders();
+  }, []);
 
-    const params = new URLSearchParams(location.search);
-    if (params.get("paid") === "1") {
-      // optional: toast cho admin
-      // toast.success("Đơn hàng đã được thanh toán!");
-    }
-  }, [location.search]);
+  const filteredOrders = orders.filter(o => {
+    const matchKeyword =
+      o.order_id.toString().includes(keyword) ||
+      (o.customer_name || "").toLowerCase().includes(keyword.toLowerCase());
 
+    const matchStatus = status === "all" || o.order_status === status;
+    return matchKeyword && matchStatus;
+  });
 
-  const formatDate = (dateStr) => {
-    return new Date(dateStr).toLocaleString("vi-VN");
-  };
-
-  const filteredOrders = orders.filter((o) =>
-    statusFilter === "all" ? true : o.order_status === statusFilter
-  );
-
-  if (loading) return <div className="admin-loading">Đang tải đơn hàng...</div>;
+  if (loading) {
+    return <div className="admin-loading">Đang tải đơn hàng...</div>;
+  }
 
   return (
-    <div className="orders-page">
-      <h1 className="page-title">Đơn Hàng</h1>
+    <div className="admin-page">
+      <h1 className="page-title">📦 Quản lý đơn hàng</h1>
 
-      {/* Bộ lọc */}
-      <div className="filter-bar">
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-        >
-          <option value="all">Tất cả</option>
+      {/* ===== TOOLBAR ===== */}
+      <div className="admin-toolbar">
+        <input
+          type="text"
+          placeholder="🔍 Mã đơn / tên khách..."
+          value={keyword}
+          onChange={(e) => setKeyword(e.target.value)}
+        />
+
+        <select value={status} onChange={(e) => setStatus(e.target.value)}>
+          <option value="all">Tất cả trạng thái</option>
           <option value="pending">Chờ xử lý</option>
           <option value="processing">Đang xử lý</option>
-          <option value="shipping">Đang giao</option>
           <option value="completed">Hoàn thành</option>
+          <option value="cancelled">Đã hủy</option>
         </select>
       </div>
 
-      {/* Bảng đơn hàng */}
-      <table className="orders-table">
+      {/* ===== TABLE ===== */}
+      <table className="admin-table">
         <thead>
           <tr>
             <th>Mã đơn</th>
@@ -96,48 +76,45 @@ export default function Orders() {
         <tbody>
           {filteredOrders.length === 0 ? (
             <tr>
-              <td colSpan="7" className="no-data">Không có đơn hàng nào.</td>
+              <td colSpan="8" className="no-data">
+                Không tìm thấy đơn hàng
+              </td>
             </tr>
           ) : (
-            filteredOrders.map((order) => (
-              <tr key={order.order_id}>
-                <td># {order.order_id}</td>
-                <td>{order.customer_name}</td>
-                <td>{order.customer_phone}</td>
-                <td>{order.total_price.toLocaleString()} đ</td>
+            filteredOrders.map((o) => (
+              <tr key={o.order_id}>
+                <td>#{o.order_id}</td>
+                <td>{o.customer_name}</td>
+                <td>{o.customer_phone}</td>
+                <td>{Number(o.total_price).toLocaleString()} đ</td>
 
-                {/* TRẠNG THÁI — ALWAYS SHOW */}
                 <td>
-  <AdminOrderStatusBadge
-    status={order.order_status}
-    orderId={order.order_id}
-    onUpdated={(newStatus) => {
-      setOrders((prev) =>
-        prev.map((o) =>
-          o.order_id === order.order_id
-            ? { ...o, order_status: newStatus }
-            : o
-        )
-      );
-    }}
-  />
-</td>
-
-
-                <td>{formatDate(order.created_at)}</td>
-                <td>
-                  <button className="view-btn" onClick={() => handleView(order.order_id)}>
-                    Xem
-                  </button>
+                  <span className={`badge badge-${o.order_status}`}>
+                    {o.order_status === "pending" && "Chờ xử lý"}
+                    {o.order_status === "processing" && "Đang xử lý"}
+                    {o.order_status === "completed" && "Hoàn thành"}
+                    {o.order_status === "cancelled" && "Đã hủy"}
+                  </span>
                 </td>
-                {/* Thanh toán trạng thái */}
-                <td>
-  <PaymentBadge
-    status={order.payment_status}
-    orderId={order.order_id}
-  />
-</td>
 
+                <td>{o.created_at}</td>
+
+                <td>
+                  <Link
+                    className="btn-view"
+                    to={`/admin/orders/${o.order_id}`}
+                  >
+                    Xem
+                  </Link>
+                </td>
+
+                <td>
+                  {o.payment_status === "PAID" ? (
+                    <span className="badge badge-success">Đã thanh toán</span>
+                  ) : (
+                    <span className="badge badge-danger">Chưa thanh toán</span>
+                  )}
+                </td>
               </tr>
             ))
           )}

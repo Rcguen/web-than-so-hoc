@@ -17,6 +17,7 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
+import "./i18n/i18n";
 
 ChartJS.register(
   CategoryScale,

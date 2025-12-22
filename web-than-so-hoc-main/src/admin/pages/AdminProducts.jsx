@@ -9,6 +9,7 @@ export default function AdminProducts() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState({}); // { product_id: true }
   const [editVals, setEditVals] = useState({}); // { product_id: { quantity, stock } }
+  const [keyword, setKeyword] = useState("");
 
   const loadProducts = async () => {
     try {
@@ -29,6 +30,9 @@ export default function AdminProducts() {
     loadProducts();
   }, []);
 
+  const filtered = products.filter(p =>
+    p.product_name.toLowerCase().includes(keyword.toLowerCase())
+  );
   const toggleStatus = async (product_id) => {
     try {
       await axios.put(
@@ -97,8 +101,16 @@ export default function AdminProducts() {
   return (
     <div className="admin-page">
       <h1 className="page-title">Sản phẩm</h1>
-
+      <div className="admin-toolbar">
+        <input
+          type="text"
+          placeholder="🔍 Tìm sản phẩm theo tên..."
+          value={keyword}
+          onChange={(e) => setKeyword(e.target.value)}
+        />
+      </div>
       <div className="top-actions">
+        
         <Link to="/admin/products/add" className="btn-add">
           + Thêm sản phẩm
         </Link>
@@ -120,7 +132,7 @@ export default function AdminProducts() {
         </thead>
 
         <tbody>
-          {products.length === 0 && (
+          {filtered.length === 0 && (
             <tr>
               <td colSpan="9" style={{ textAlign: "center", padding: 20 }}>
                 Chưa có sản phẩm nào.
@@ -128,7 +140,7 @@ export default function AdminProducts() {
             </tr>
           )}
 
-          {products.map((p) => (
+          {filtered.map((p) => (
             <tr key={p.product_id}>
               <td>{p.product_id}</td>
 

@@ -1,23 +1,52 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
+import "./adminlayout.css";
 
-export default function AdminSidebar() {
+export default function AdminSidebar({ collapsed }) {
   return (
-    <div className="admin-sidebar">
-      <h2 className="admin-logo">🔮 ADMIN</h2>
+    <aside className={`admin-sidebar ${collapsed ? "collapsed" : ""}`}>
+      {/* LOGO */}
+      <div className="admin-logo">
+        <span className="logo-icon">🔮</span>
+        {!collapsed && <span className="logo-text">ADMIN PANEL</span>}
+      </div>
 
+      {/* MENU */}
       <ul className="admin-menu">
-        <li><NavLink to="/admin/dashboard">Dashboard</NavLink></li>
-        <li><NavLink to="/admin/orders">Đơn Hàng</NavLink></li>
-        <li><NavLink to="/admin/products">Sản Phẩm</NavLink></li>
-        <li><NavLink to="/admin/users">Người Dùng</NavLink></li>
         <li>
-  <NavLink to="/admin/categories" className={({ isActive }) => (isActive ? "active" : "")}>
-    📂 Danh mục
-  </NavLink>
-</li>        <li>
-          <NavLink to="/admin/messages">💬 Tin nhắn</NavLink>
-        </li>      </ul>
-    </div>
+          <NavLink to="/admin/dashboard">
+            📊 {!collapsed && <span>Dashboard</span>}
+          </NavLink>
+        </li>
+
+        <li>
+          <NavLink to="/admin/orders">
+            🧾 {!collapsed && <span>Đơn Hàng</span>}
+          </NavLink>
+        </li>
+
+        <li>
+          <NavLink to="/admin/products">
+            🛒 {!collapsed && <span>Sản Phẩm</span>}
+          </NavLink>
+        </li>
+
+        <li>
+          <NavLink to="/admin/users">
+            👤 {!collapsed && <span>Người Dùng</span>}
+          </NavLink>
+        </li>
+
+        <li>
+          <NavLink to="/admin/categories">
+            📂 {!collapsed && <span>Danh Mục</span>}
+          </NavLink>
+        </li>
+      </ul>
+
+      <div className="admin-sidebar-footer">
+        <small>© 2025 Numerology Admin</small>
+      </div>
+    </aside>
   );
 }
